@@ -9,14 +9,13 @@ import se.scalablesolutions.akka.actor.Actor
  * @author Anthonin Bonnefoy
  */
 
-
 case class AskRandom()
 
-class RandomSupplier(workerName: String) extends Actor {
+class RandomSupplier() extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
 
   def receive: PartialFunction[Any, Unit] = {
-    case AskRandom =>
+    case AskRandom() =>
       val res = Math.random
       log.debug("Replying " + res)
       reply(res)
