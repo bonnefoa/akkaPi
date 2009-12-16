@@ -33,6 +33,11 @@
             <version>${scala.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-compiler</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+        <dependency>
             <artifactId>akka-kernel</artifactId>
             <groupId>se.scalablesolutions.akka</groupId>
             <version>0.6</version>

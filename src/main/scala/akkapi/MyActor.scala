@@ -13,24 +13,26 @@ import se.scalablesolutions.akka.actor.{OneForOneStrategy, Actor}
 
 sealed trait Message
 
-case class Supervise(worker: Worker) extends Message
+case class DoSupervise(worker: Worker) extends Message
 
-case class DoWork(work: Work) extends Message
+case class DoWork(work: String) extends Message
 
-case object Die extends Message
+case object DoDie extends Message
+case object DoReset extends Message
 
 class Worker(workerName: String) extends Actor {
-  lifeCycleConfig = Some(LifeCycle(Permanent, 100))
+
+  lifeCycle = Some(LifeCycle(Permanent))
 
   def receive: PartialFunction[Any, Unit] = {
 
     case DoWork(work: String) =>
       log.debug("start working... at: " + work)
 
-    case Reset =>
+    case DoReset =>
       log.info("%s has been reset", toString)
 
-    case Die =>
+    case DoDie =>
       log.debug("Dying...")
       throw new RuntimeException("I'm dead: " + this.toString)
 
@@ -38,17 +40,14 @@ class Worker(workerName: String) extends Actor {
       log.error("Unknown event: %s", other)
   }
 
-  override def preRestart(reason: AnyRef, config: Option[AnyRef]) {
+  override def preRestart(reason: AnyRef) {
     log.debug("pre-restarting " + this)
   }
 
-  override def postRestart(reason: AnyRef, config: Option[AnyRef]) {
+  override def postRestart(reason: AnyRef) {
     log.debug("post-restarting " + this)
   }
 
   override def toString = "[" + workerName + "]"
-
 }
-
-class MyActor
 
