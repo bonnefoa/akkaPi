@@ -13,6 +13,7 @@ import org.scalatest.FlatSpec
  */
 
 class RandomTest extends FixtureFlatSpec with ShouldMatchers {
+
   // 1. define type FixtureParam
   type FixtureParam = Actor
   // 2. define the withFixture method
@@ -21,8 +22,9 @@ class RandomTest extends FixtureFlatSpec with ShouldMatchers {
     val factory = SupervisorFactory(
       SupervisorConfig(
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-        Supervise(random, LifeCycle(Permanent)) :: Nil))
+        Supervise(random, LifeCycle(Temporary)) :: Nil))
     val supervisor = factory.newInstance
+
     println("\n===> starting supervisor")
     supervisor.start
     test(random)
@@ -34,10 +36,35 @@ class RandomTest extends FixtureFlatSpec with ShouldMatchers {
     random =>
       (1 to 100).foreach {
         i =>
-          val reply = (random !! AskRandom())
+          val reply: Option[Double] = (random !! AskRandom())
           reply should not be (None)
-          val value = reply.getOrElse(0D)
+          val value = reply.get
           value should (be < (1D) and be > (0D))
+      }
+  }
+
+  it should "supply random list value between min and max given" in {
+    random =>
+      (1 to 100).foreach {
+        i =>
+          val reply: Option[Double] = (random !! AskRandomBetween(i * 1D, i * 2D))
+          reply should not be (None)
+          val value = reply.get
+          value should (be < (i * 1D) and be > (i * 2D))
+      }
+  }
+  it should "supply random list value when asked" in {
+    random =>
+      (1 to 100).foreach {
+        i =>
+          val reply: Option[List[Double]] = (random !! AskRandomListBetween(10, i * 1D, i * 2D))
+          reply should not be (None)
+          val list = reply.get
+          list should have size (10)
+          list.foreach(value =>
+            value should (be < (i * 1D) and be > (i * 2D))
+            )
+
       }
   }
 

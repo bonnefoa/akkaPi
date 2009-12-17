@@ -10,23 +10,32 @@ import org.uncommons.maths.random.MersenneTwisterRNG
  * @author Anthonin Bonnefoy
  */
 
-case class AskRandom()
-case class AskRandomBetween(min: Double, max: Double)
+sealed trait RandomMessage
+case class AskRandom() extends RandomMessage
+case class AskRandomBetween(min: Double, max: Double) extends RandomMessage
+case class AskRandomListBetween(size: Int, min: Double, max: Double) extends RandomMessage
+case class AskRandomList(size: Int) extends RandomMessage
+
 
 class RandomSupplier() extends Actor {
-  lifeCycle = Some(LifeCycle(Permanent))
+  lifeCycle = Some(LifeCycle(Temporary))
 
   def receive: PartialFunction[Any, Unit] = {
     case AskRandom() =>
-      val res = RandomGenerator.nextDouble
-      log.debug("Replying " + res)
-      reply(res)
+      replyAndLog(RandomGenerator.nextDouble)
     case AskRandomBetween(min, max) =>
-      val res = RandomGenerator.nextDouble(min, max)
-      log.debug("Replying " + res)
-      reply(res)
+      replyAndLog(RandomGenerator.nextDouble(min, max))
+    case AskRandomList(size) =>
+      replyAndLog(RandomGenerator.listDouble(size))
+    case AskRandomListBetween(size, min, max) =>
+      replyAndLog(RandomGenerator.listDouble(size))
     case other =>
       log.error("Unknown event: %s", other)
+  }
+
+  private def replyAndLog(result: Any) = {
+    log.debug("Replying " + result)
+    reply(result)
   }
 
   override def preRestart(reason: AnyRef) {
@@ -39,6 +48,7 @@ class RandomSupplier() extends Actor {
 
   override def toString = "[RandomSupplier]"
 }
+
 
 object RandomGenerator {
   val mersenne = new MersenneTwisterRNG
