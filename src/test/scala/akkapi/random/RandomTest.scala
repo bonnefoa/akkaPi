@@ -64,7 +64,7 @@ class RandomTest extends FixtureFlatSpec with ShouldMatchers {
           val reply: Option[Double] = (random !! AskRandomBetween(i * 1D, i * 2D))
           reply should not be (None)
           val value = reply.get
-          value should (be < (i * 1D) and be > (i * 2D))
+          value should (be >= (i * 1D) and be <= (i * 2D))
       }
   }
   it should "supply random list value when asked" in {
@@ -76,7 +76,7 @@ class RandomTest extends FixtureFlatSpec with ShouldMatchers {
           val list = reply.get
           list should have size (10)
           list.foreach(value =>
-            value should (be < (i * 1D) and be > (i * 2D))
+            value should (be >= (i * 1D) and be <= (i * 2D))
             )
 
       }

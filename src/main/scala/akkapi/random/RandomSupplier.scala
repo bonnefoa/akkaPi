@@ -28,7 +28,7 @@ class RandomSupplier(workerName: String) extends Actor {
     case AskRandomList(size) =>
       replyAndLog(RandomGenerator.listDouble(size))
     case AskRandomListBetween(size, min, max) =>
-      replyAndLog(RandomGenerator.listDouble(size))
+      replyAndLog(RandomGenerator.listDouble(size, min, max))
     case other =>
       log.error("Unknown event: %s", other)
   }
@@ -76,7 +76,7 @@ object RandomGenerator {
   /**
    * Generate a list of random double
    */
-  def listDouble(size: Int, min: Int, max: Int): List[Double] = {
+  def listDouble(size: Int, min: Double, max: Double): List[Double] = {
     (0 until size).flatMap(
       i => nextDouble(min, max) :: Nil
       ).toList
