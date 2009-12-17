@@ -1,10 +1,10 @@
 package akkapi.random
 
 import org.scalatest.matchers.ShouldMatchers
-import se.scalablesolutions.akka.config.ScalaConfig._
 import org.scalatest.fixture.FixtureFlatSpec
 import se.scalablesolutions.akka.actor.{Actor, SupervisorFactory}
 import org.scalatest.FlatSpec
+import akkapi.supervisor.{DoSupervise, RandomSupervisor}
 
 /**
  * Test random features
@@ -12,20 +12,35 @@ import org.scalatest.FlatSpec
  * @author Anthonin Bonnefoy
  */
 
+class SupervisorTest extends FlatSpec with ShouldMatchers {
+  "A supervisor Test" should "start stop and work with a new instance" in {
+    var random = new RandomSupplier("first")
+
+    var supervisor = new RandomSupervisor()
+    supervisor.start
+    supervisor.!(new DoSupervise(random))(supervisor)
+    random !! AskRandom() should not be (None)
+    supervisor.stop
+
+    val second = new RandomSupplier("second")
+    second.start
+    second !! AskRandom() should not be (None)
+    second.stop
+  }
+}
+
 class RandomTest extends FixtureFlatSpec with ShouldMatchers {
 
   // 1. define type FixtureParam
   type FixtureParam = Actor
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
-    val random = new RandomSupplier
-    val factory = SupervisorFactory(
-      SupervisorConfig(
-        RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
-        Supervise(random, LifeCycle(Temporary)) :: Nil))
-    val supervisor = factory.newInstance
-    println("\n===> starting supervisor")
+    var supervisor = new RandomSupervisor()
+
+    val random = new RandomSupplier("one")
     supervisor.start
+    println("\n===> starting supervisor")
+    supervisor.!(new DoSupervise(random))(supervisor)
     test(random)
     println("\n===> stoping supervisor")
     supervisor.stop
