@@ -2,6 +2,7 @@ package akkapi.random
 
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.actor.Actor
+import org.uncommons.maths.random.MersenneTwisterRNG
 
 /**
  * Created by IntelliJ IDEA.
@@ -10,16 +11,20 @@ import se.scalablesolutions.akka.actor.Actor
  */
 
 case class AskRandom()
+case class AskRandomBetween(min: Double, max: Double)
 
 class RandomSupplier() extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
 
   def receive: PartialFunction[Any, Unit] = {
     case AskRandom() =>
-      val res = Math.random
+      val res = RandomGenerator.nextDouble
       log.debug("Replying " + res)
       reply(res)
-
+    case AskRandomBetween(min, max) =>
+      val res = RandomGenerator.nextDouble(min, max)
+      log.debug("Replying " + res)
+      reply(res)
     case other =>
       log.error("Unknown event: %s", other)
   }
@@ -33,4 +38,17 @@ class RandomSupplier() extends Actor {
   }
 
   override def toString = "[RandomSupplier]"
+}
+
+object RandomGenerator {
+  val mersenne = new MersenneTwisterRNG
+
+  def nextDouble = {
+    mersenne.nextDouble
+  }
+
+  def nextDouble(min: Double, max: Double) = {
+    mersenne.nextDouble * (max - min) + min
+  }
+
 }
