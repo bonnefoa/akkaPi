@@ -31,3 +31,17 @@ class PiActor(id: String) extends Actor {
 
 }
 
+class PiCalculator {
+  def estimatePi(randomList: List[(Double, Double)]): Double = {
+    getNumberPointsInCircle(randomList) / randomList.size.asInstanceOf[Double] * 4
+  }
+
+  def getNumberPointsInCircle(randomList: List[(Double, Double)]): Int = {
+    (0 /: randomList)((seed: Int, tuple) => {
+      val x = tuple._1
+      val y = tuple._2
+      if (Math.sqrt(x * x + y * y) < 1) seed + 1
+      else seed
+    })
+  }
+}
