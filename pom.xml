@@ -54,6 +54,12 @@
             <version>1.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.mahout.uncommons.math</groupId>
+            <artifactId>uncommons-math</artifactId>
+            <version>1.0.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>

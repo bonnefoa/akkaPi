@@ -7,7 +7,7 @@ import se.scalablesolutions.akka.actor.{Actor, SupervisorFactory}
 import org.scalatest.FlatSpec
 
 /**
- * Created by IntelliJ IDEA.
+ * Test random features
  *
  * @author Anthonin Bonnefoy
  */
@@ -61,4 +61,25 @@ class RandomGeneratorTest extends FlatSpec with ShouldMatchers {
         }
     }
   }
+
+  it should "generate random a list of value at the given size" in {
+    (0 to 20).foreach {
+      i => val listRandom = RandomGenerator.listDouble(i)
+      listRandom should have size (i)
+      listRandom.foreach(
+        value => value should (be <= (1D) and be >= (0D))
+        )
+    }
+  }
+
+  it should "generate random a list of value at the given size with min and max defines" in {
+    (0 to 20).foreach {
+      i => val listRandom = RandomGenerator.listDouble(i, 0, i)
+      listRandom should have size (i)
+      listRandom.foreach(
+        value => value should (be <= (i.asInstanceOf[Double]) and be >= (0D))
+        )
+    }
+  }
+
 }

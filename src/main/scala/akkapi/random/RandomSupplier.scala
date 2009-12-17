@@ -43,12 +43,33 @@ class RandomSupplier() extends Actor {
 object RandomGenerator {
   val mersenne = new MersenneTwisterRNG
 
-  def nextDouble = {
+  def nextDouble(): Double = {
     mersenne.nextDouble
   }
 
-  def nextDouble(min: Double, max: Double) = {
+  /**
+   * Generate a random double
+   */
+  def nextDouble(min: Double, max: Double): Double = {
     mersenne.nextDouble * (max - min) + min
+  }
+
+  /**
+   * Generate a list of random double
+   */
+  def listDouble(size: Int): List[Double] = {
+    (0 until size).flatMap(
+      i => nextDouble :: Nil
+      ).toList
+  }
+
+  /**
+   * Generate a list of random double
+   */
+  def listDouble(size: Int, min: Int, max: Int): List[Double] = {
+    (0 until size).flatMap(
+      i => nextDouble(min, max) :: Nil
+      ).toList
   }
 
 }
