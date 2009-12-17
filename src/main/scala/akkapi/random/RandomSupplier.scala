@@ -17,8 +17,9 @@ case class AskRandomListBetween(size: Int, min: Double, max: Double) extends Ran
 case class AskRandomList(size: Int) extends RandomMessage
 
 
-class RandomSupplier(workerName: String) extends Actor {
+class RandomSupplier(id: String) extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
+
 
   def receive: PartialFunction[Any, Unit] = {
     case AskRandom() =>
@@ -46,7 +47,7 @@ class RandomSupplier(workerName: String) extends Actor {
     log.debug("post-restarting " + this)
   }
 
-  override def toString = "[" + workerName + "]"
+  override def toString = "[RandomSupplier]"
 }
 
 

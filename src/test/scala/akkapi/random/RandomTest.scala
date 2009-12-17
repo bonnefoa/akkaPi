@@ -14,15 +14,15 @@ import akkapi.supervisor.{DoSupervise, RandomSupervisor}
 
 class SupervisorTest extends FlatSpec with ShouldMatchers {
   "A supervisor Test" should "start stop and actor should still work" in {
-    var random = new RandomSupplier("first")
+    var random = new RandomSupplier("randomSupplier")
 
-    var supervisor = new RandomSupervisor()
+    val supervisor = new RandomSupervisor()
     supervisor.start
     supervisor.!(new DoSupervise(random))(supervisor)
     random !! AskRandom() should not be (None)
     supervisor.stop
 
-    val second = new RandomSupplier("second")
+    val second = new RandomSupplier("randomSupplier2")
     second.start
     second !! AskRandom() should not be (None)
     second.stop
@@ -35,8 +35,8 @@ class RandomTest extends FixtureFlatSpec with CheckRandomReply {
   type FixtureParam = Actor
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
-    var supervisor = new RandomSupervisor()
-    val random = new RandomSupplier("one")
+    val supervisor = new RandomSupervisor()
+    val random = new RandomSupplier("randomSupplier")
     supervisor.start
     println("\n===> starting supervisor")
     supervisor.!(new DoSupervise(random))(supervisor)

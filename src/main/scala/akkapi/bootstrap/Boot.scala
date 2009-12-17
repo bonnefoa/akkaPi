@@ -5,7 +5,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import akkapi.random.RandomSupplier
 
 object Boot {
-  val random = new RandomSupplier("aRandom")
+  val random = new RandomSupplier("randomSupplier")
   val factory = SupervisorFactory(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
