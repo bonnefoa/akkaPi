@@ -13,7 +13,7 @@ import akkapi.supervisor.{DoSupervise, RandomSupervisor}
  */
 
 class SupervisorTest extends FlatSpec with ShouldMatchers {
-  "A supervisor Test" should "start stop and work with a new instance" in {
+  "A supervisor Test" should "start stop and actor should still work" in {
     var random = new RandomSupplier("first")
 
     var supervisor = new RandomSupervisor()
@@ -29,14 +29,13 @@ class SupervisorTest extends FlatSpec with ShouldMatchers {
   }
 }
 
-class RandomTest extends FixtureFlatSpec with ShouldMatchers {
+class RandomTest extends FixtureFlatSpec with CheckRandomReply {
 
   // 1. define type FixtureParam
   type FixtureParam = Actor
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
     var supervisor = new RandomSupervisor()
-
     val random = new RandomSupplier("one")
     supervisor.start
     println("\n===> starting supervisor")
@@ -46,14 +45,13 @@ class RandomTest extends FixtureFlatSpec with ShouldMatchers {
     supervisor.stop
   }
 
+
+
   "A RandomSupplier" should "supply random value when asked" in {
     random =>
-      (1 to 100).foreach {
+      (1 to 20).foreach {
         i =>
-          val reply: Option[Double] = (random !! AskRandom())
-          reply should not be (None)
-          val value = reply.get
-          value should (be < (1D) and be > (0D))
+          checkReply(random !! AskRandom(), 0D, 1D)
       }
   }
 
@@ -61,30 +59,23 @@ class RandomTest extends FixtureFlatSpec with ShouldMatchers {
     random =>
       (1 to 100).foreach {
         i =>
-          val reply: Option[Double] = (random !! AskRandomBetween(i * 1D, i * 2D))
-          reply should not be (None)
-          val value = reply.get
-          value should (be >= (i * 1D) and be <= (i * 2D))
+          checkReply(random !! AskRandomBetween(i * 1D, i * 2D), i * 1D, i * 2D)
       }
   }
   it should "supply random list value when asked" in {
     random =>
       (1 to 100).foreach {
         i =>
-          val reply: Option[List[Double]] = (random !! AskRandomListBetween(10, i * 1D, i * 2D))
-          reply should not be (None)
-          val list = reply.get
-          list should have size (10)
-          list.foreach(value =>
-            value should (be >= (i * 1D) and be <= (i * 2D))
-            )
-
+          val min = i * 1D
+          val max = i * 2D
+          val reply: Option[List[Double]] = (random !! AskRandomListBetween(i, min, max))
+          checkReply(reply, i, min, max)
       }
   }
 
 }
 
-class RandomGeneratorTest extends FlatSpec with ShouldMatchers {
+class RandomGeneratorTest extends FlatSpec with CheckRandomReply {
   "A RandomGenerator" should "generate random value between 0 and 1 " in {
     (1 to 100).foreach {
       i =>
