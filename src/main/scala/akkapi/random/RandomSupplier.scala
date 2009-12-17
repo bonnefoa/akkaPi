@@ -18,7 +18,7 @@ case class AskRandomList(size: Int) extends RandomMessage
 
 
 class RandomSupplier() extends Actor {
-  lifeCycle = Some(LifeCycle(Temporary))
+  lifeCycle = Some(LifeCycle(Permanent))
 
   def receive: PartialFunction[Any, Unit] = {
     case AskRandom() =>

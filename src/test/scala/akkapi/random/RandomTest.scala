@@ -24,7 +24,6 @@ class RandomTest extends FixtureFlatSpec with ShouldMatchers {
         RestartStrategy(OneForOne, 3, 100, List(classOf[Exception])),
         Supervise(random, LifeCycle(Temporary)) :: Nil))
     val supervisor = factory.newInstance
-
     println("\n===> starting supervisor")
     supervisor.start
     test(random)
