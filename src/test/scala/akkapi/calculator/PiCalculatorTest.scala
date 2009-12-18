@@ -45,15 +45,22 @@ class PiCalculatorTest extends FlatSpec with ShouldMatchers {
   }
 
   it should "find an estimate of pi" in {
-    val precision = 100
-    val crible = (1 to precision).flatMap(j => {
-      val y = j / precision.asInstanceOf[Double]
-      (1 to precision).flatMap(i => {
-        val x = i / precision.asInstanceOf[Double]
-        List((x, y))
-      })
-    }).toList
-    piCalculator.estimatePi(crible) should (be > (3D) and be < (4D));
+    val crible = getSeive(0.01)
+    val pi: Double = piCalculator.estimatePi(crible)
+    println(pi)
+    pi should (be > (3D) and be < (3.5D));
   }
-}                     
+
+
+  def getSeive(step: Double): List[(Double, Double)] = {
+    def getSeive(x: Double, y: Double, list: List[(Double, Double)], step: Double): List[(Double, Double)] = {
+      if (x + step > 1) {
+        if (y + step > 1) (x, y) :: list
+        else getSeive(0, y + step, (x, y) :: list, step)
+      } else
+        getSeive(x + step, y, (x, y) :: list, step)
+    }
+    getSeive(0, 0, Nil, step)
+  }
+}
 
