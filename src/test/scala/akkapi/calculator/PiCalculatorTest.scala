@@ -6,6 +6,7 @@ import se.scalablesolutions.akka.actor.Actor
 import akkapi.supervisor.{RandomSupervisor, DoSupervise}
 import akkapi.random.RandomSupplier
 import org.scalatest.FlatSpec
+import se.scalablesolutions.akka.util.Logging
 
 /**
  * Created by IntelliJ IDEA.
@@ -25,15 +26,33 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
     supervisor.start
     supervisor.!(new DoSupervise(random))(supervisor)
     supervisor.!(new DoSupervise(piActor))(supervisor)
+    Thread.sleep(10)
     test(piActor)
     supervisor.stop
   }
 
   "A PiActor" should "supply a estimate of pi when asked" in {
     piActor =>
-      val response: Option[Double] = piActor !! AskPiWithNumberPoints(5000)
-      response should not be (None)
-      response.get should (be > (3D) and be < (3.5D))
+      Time("ask pi normally") {
+        (1 to 10).foreach {
+          i =>
+            val start = System.currentTimeMillis
+            val response: Option[Double] = piActor !! AskPiWithNumberOfPoints(1000)
+            response should not be (None)
+            response.get should (be > (3D) and be < (3.2D))
+        }
+      }
+  }
+  it should "supply an estimate of pi with batch method" in {
+    piActor =>
+      Time("ask pi normally with batch") {
+        (1 to 10).foreach {
+          i =>
+            val response: Option[Double] = piActor !! AskPiWithNumberOfPointsAndBatchSize(1000, 100)
+            response should not be (None)
+            response.get should (be > (3D) and be < (3.2D))
+        }
+      }
   }
 
 
@@ -50,18 +69,18 @@ class PiCalculatorTest extends FlatSpec with ShouldMatchers {
   }
 
   it should "find an estimate of pi" in {
-    val crible = getSeive(0.01)
-    piCalculator.estimatePi(crible) should (be > (3D) and be < (3.5D))
+    val seive = getSeive(0.01)
+    piCalculator.estimatePi(seive) should (be > (3D) and be < (3.5D))
   }
 
   "A PiCalculatorStateful" should "find an estimate of pi given enough point" in {
     val piCalculatorStateful = new PiCalculatorStateful
-    val crible = getSeive(0.01)
-    crible.foreach(tuple => {
+    val seive = getSeive(0.01)
+    seive.foreach(tuple => {
       piCalculatorStateful.addPoint(tuple._1, tuple._2)
     }
       )
-    piCalculator.estimatePi(crible) should be(piCalculatorStateful.processPi)
+    piCalculator.estimatePi(seive) should be(piCalculatorStateful.processPi)
   }
 
 
@@ -77,3 +96,16 @@ class PiCalculatorTest extends FlatSpec with ShouldMatchers {
   }
 }
 
+
+
+object Time extends Logging {
+  def apply[T](name: String)(block: => T) {
+    val start = System.currentTimeMillis
+    try {
+      block
+    } finally {
+      val diff = System.currentTimeMillis - start
+      log.debug("Block \"" + name + "\" completed, time taken: " + diff + " ms (" + diff / 1000.0 + " s)")
+    }
+  }
+}

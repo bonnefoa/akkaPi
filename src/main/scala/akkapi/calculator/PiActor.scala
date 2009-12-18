@@ -3,7 +3,7 @@ package akkapi.calculator
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.ScalaConfig.LifeCycle
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
-import akkapi.random.{AskRandom, RandomSupplier}
+import akkapi.random.{AskRandomList, AskRandom, RandomSupplier}
 
 /**
  * Calculate Pi
@@ -12,8 +12,8 @@ import akkapi.random.{AskRandom, RandomSupplier}
  */
 
 sealed trait PiMessage
-case class AskPi() extends PiMessage
-case class AskPiWithNumberPoints(numberOfPoints: Int) extends PiMessage
+case class AskPiWithNumberOfPoints(numberOfPoints: Int) extends PiMessage
+case class AskPiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: Int) extends PiMessage
 
 class PiActor(id: String) extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
@@ -24,14 +24,14 @@ class PiActor(id: String) extends Actor {
   }
 
   def receive: PartialFunction[Any, Unit] = {
-    case AskPi() =>
-      log.debug("Received askPi ")
-      val estimatedPi = estimatePi(1000)
-      log.debug("Estimated pi :" + estimatedPi)
-      reply(estimatedPi)
-    case AskPiWithNumberPoints(numberOfPoints) =>
+    case AskPiWithNumberOfPoints(numberOfPoints) =>
       log.debug("Received askPi with numberOfPoints :" + numberOfPoints)
       val estimatedPi = estimatePi(numberOfPoints)
+      log.debug("Estimated pi :" + estimatedPi)
+      reply(estimatedPi)
+    case AskPiWithNumberOfPointsAndBatchSize(numberOfPoints, batchSize) =>
+      log.debug("Received askPi with numberOfPoints :" + numberOfPoints + " and batchSize " + batchSize)
+      val estimatedPi = estimatePi(numberOfPoints, batchSize)
       log.debug("Estimated pi :" + estimatedPi)
       reply(estimatedPi)
     case other =>
@@ -48,11 +48,30 @@ class PiActor(id: String) extends Actor {
     })
     piCalculatorStateful.processPi
   }
+
+  def estimatePi(numberOfPoints: Int, batchSize: Int): Double = {
+    val piCalculatorStateful = new PiCalculatorStateful
+    val randomSupplier = ActorRegistry.actorsFor(classOf[RandomSupplier]).head
+    (1 to numberOfPoints by batchSize).foreach(i => {
+      val x = randomSupplier !! new AskRandomList(batchSize)
+      val y = randomSupplier !! new AskRandomList(batchSize)
+      piCalculatorStateful.addPoints(x.get, y.get)
+    })
+    piCalculatorStateful.processPi
+  }
+
 }
 
 class PiCalculatorStateful {
   var insideCircle = 0
   var numberOfPoints = 0
+
+  def addPoints(listX: List[Double], listY: List[Double]) {
+    for{x <- listX
+        y <- listY
+    } yield addPoint(x, y)
+  }
+
 
   def addPoint(x: Double, y: Double) {
     numberOfPoints += 1
