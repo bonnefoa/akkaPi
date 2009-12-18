@@ -31,12 +31,17 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
 
   "A PiActor" should "supply a estimate of pi when asked" in {
     piActor =>
-
+      val response: Option[Double] = piActor !! AskPiWithNumberPoints(1000)
+      response should not be (None)
+      val pi = response.get
+      println(pi)
+      pi should (be > (3D) and be < (3.5D))
   }
 }
 
 class PiCalculatorTest extends FlatSpec with ShouldMatchers {
   val piCalculator = new PiCalculator
+
   "A PiCalculator" should "find the number of point inside a unit circle" in {
     piCalculator.getNumberPointsInCircle(List((0, 0))) should be(1)
     piCalculator.getNumberPointsInCircle(List((1, 1))) should be(0)
@@ -46,9 +51,17 @@ class PiCalculatorTest extends FlatSpec with ShouldMatchers {
 
   it should "find an estimate of pi" in {
     val crible = getSeive(0.01)
-    val pi: Double = piCalculator.estimatePi(crible)
-    println(pi)
-    pi should (be > (3D) and be < (3.5D));
+    piCalculator.estimatePi(crible) should (be > (3D) and be < (3.5D))
+  }
+
+  "A PiCalculatorStateful" should "find an estimate of pi given enough point" in {
+    val piCalculatorStateful = new PiCalculatorStateful
+    val crible = getSeive(0.01)
+    crible.foreach(tuple => {
+      piCalculatorStateful.addPoint(tuple._1, tuple._2)
+    }
+      )
+    piCalculator.estimatePi(crible) should be(piCalculatorStateful.processPi)
   }
 
 
