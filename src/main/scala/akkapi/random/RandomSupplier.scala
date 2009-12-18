@@ -35,7 +35,7 @@ class RandomSupplier(id: String) extends Actor {
   }
 
   private def replyAndLog(result: Any) = {
-    log.debug("Replying " + result)
+//    log.debug("Replying " + result)
     reply(result)
   }
 

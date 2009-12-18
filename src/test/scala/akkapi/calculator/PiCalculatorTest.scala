@@ -31,12 +31,12 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
 
   "A PiActor" should "supply a estimate of pi when asked" in {
     piActor =>
-      val response: Option[Double] = piActor !! AskPiWithNumberPoints(1000)
+      val response: Option[Double] = piActor !! AskPiWithNumberPoints(5000)
       response should not be (None)
-      val pi = response.get
-      println(pi)
-      pi should (be > (3D) and be < (3.5D))
+      response.get should (be > (3D) and be < (3.5D))
   }
+
+
 }
 
 class PiCalculatorTest extends FlatSpec with ShouldMatchers {
