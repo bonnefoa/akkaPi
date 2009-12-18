@@ -1,5 +1,6 @@
 package akkapi.calculator
 
+
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FixtureFlatSpec
 import se.scalablesolutions.akka.actor.Actor
@@ -26,36 +27,48 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
     supervisor.start
     supervisor.!(new DoSupervise(random))(supervisor)
     supervisor.!(new DoSupervise(piActor))(supervisor)
-    Thread.sleep(10)
+    while (!piActor.isRunning) {
+      Thread.sleep(100)
+    }
     test(piActor)
     supervisor.stop
   }
 
-  "A PiActor" should "supply a estimate of pi when asked" in {
+  "A PiActor" should "support a great number of points" in {
     piActor =>
-      Time("ask pi normally") {
-        (1 to 10).foreach {
-          i =>
-            val start = System.currentTimeMillis
-            val response: Option[Double] = piActor !! AskPiWithNumberOfPoints(1000)
+      (1 to 50).foreach {
+        i =>
+          Time("piactor simple " + i) {
+            val response: Option[Double] = piActor !! AskPiWithNumberOfPoints(500)
             response should not be (None)
-            response.get should (be > (3D) and be < (3.2D))
-        }
-      }
-  }
-  it should "supply an estimate of pi with batch method" in {
-    piActor =>
-      Time("ask pi normally with batch") {
-        (1 to 10).foreach {
-          i =>
-            val response: Option[Double] = piActor !! AskPiWithNumberOfPointsAndBatchSize(1000, 100)
-            response should not be (None)
-            response.get should (be > (3D) and be < (3.2D))
-        }
+            response.get should (be > (2.8D) and be < (3.5D))
+          }
       }
   }
 
-
+  //
+  //  it should "supply a estimate of pi when asked" in {
+  //    piActor =>
+  //      Time("ask pi normally") {
+  //        (1 to 10).foreach {
+  //          i =>
+  //            val response: Option[Double] = piActor !! AskPiWithNumberOfPoints(1000)
+  //            response should not be (None)
+  //            response.get should (be > (2.8D) and be < (3.5D))
+  //        }
+  //      }
+  //  }
+  //  it should "supply an estimate of pi with batch method" in {
+  //    piActor =>
+  //      Time("ask pi normally with batch") {
+  //        (1 to 10).foreach {
+  //          i =>
+  //            val response: Option[Double] = piActor !! AskPiWithNumberOfPointsAndBatchSize(1000, 100)
+  //            response should not be (None)
+  //            response.get should (be > (2.8D) and be < (3.5D))
+  //        }
+  //      }
+  //  }
 }
 
 class PiCalculatorTest extends FlatSpec with ShouldMatchers {

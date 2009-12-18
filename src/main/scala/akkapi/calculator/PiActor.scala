@@ -17,7 +17,7 @@ case class AskPiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: I
 
 class PiActor(id: String) extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
-
+  timeout = 10000
   def getRandomSupplier: RandomSupplier = {
     val listRandomSupplier = ActorRegistry.actorsFor(classOf[RandomSupplier])
     listRandomSupplier.head.asInstanceOf[RandomSupplier]
@@ -44,7 +44,8 @@ class PiActor(id: String) extends Actor {
     (1 to numberOfPoints).foreach(i => {
       val x = randomSupplier !! new AskRandom
       val y = randomSupplier !! new AskRandom
-      piCalculatorStateful.addPoint(x.get, y.get)
+      if (x.isDefined && y.isDefined)
+        piCalculatorStateful.addPoint(x.get, y.get)
     })
     piCalculatorStateful.processPi
   }
@@ -55,7 +56,8 @@ class PiActor(id: String) extends Actor {
     (1 to numberOfPoints by batchSize).foreach(i => {
       val x = randomSupplier !! new AskRandomList(batchSize)
       val y = randomSupplier !! new AskRandomList(batchSize)
-      piCalculatorStateful.addPoints(x.get, y.get)
+      if (x.isDefined && y.isDefined)
+        piCalculatorStateful.addPoints(x.get, y.get)
     })
     piCalculatorStateful.processPi
   }

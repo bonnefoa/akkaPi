@@ -49,7 +49,7 @@ class RandomTest extends FixtureFlatSpec with CheckRandomReply {
 
   "A RandomSupplier" should "supply random value when asked" in {
     random =>
-      (1 to 20).foreach {
+      (1 to 100).foreach {
         i =>
           checkReply(random !! AskRandom(), 0D, 1D)
       }
