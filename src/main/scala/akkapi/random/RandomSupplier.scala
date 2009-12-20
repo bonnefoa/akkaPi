@@ -1,8 +1,8 @@
 package akkapi.random
 
 import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.actor.Actor
 import org.uncommons.maths.random.MersenneTwisterRNG
+import se.scalablesolutions.akka.actor.Actor
 
 /**
  * Created by IntelliJ IDEA.
@@ -12,14 +12,19 @@ import org.uncommons.maths.random.MersenneTwisterRNG
 
 sealed trait RandomMessage
 case class AskRandom() extends RandomMessage
+case class AskRandomAsync() extends RandomMessage
 case class AskRandomBetween(min: Double, max: Double) extends RandomMessage
+case class AskRandomBetweenAsync(min: Double, max: Double) extends RandomMessage
 case class AskRandomListBetween(size: Int, min: Double, max: Double) extends RandomMessage
+case class AskRandomListBetweenAsync(size: Int, min: Double, max: Double) extends RandomMessage
 case class AskRandomList(size: Int) extends RandomMessage
+case class AskRandomListAsync(size: Int) extends RandomMessage
 
 
-class RandomSupplier(id: String) extends Actor {
+class RandomSupplier(actorName: String) extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
-
+  timeout = 100
+  id = actorName
 
   def receive: PartialFunction[Any, Unit] = {
     case AskRandom() =>
@@ -30,12 +35,28 @@ class RandomSupplier(id: String) extends Actor {
       replyAndLog(RandomGenerator.listDouble(size))
     case AskRandomListBetween(size, min, max) =>
       replyAndLog(RandomGenerator.listDouble(size, min, max))
+    case AskRandomAsync() =>
+      replyToSenderAndLog(RandomGenerator.nextDouble)
+    case AskRandomBetweenAsync(min, max) =>
+      replyToSenderAndLog(RandomGenerator.nextDouble(min, max))
+
+    case AskRandomListAsync(size) =>
+      replyToSenderAndLog(RandomGenerator.listDouble(size))
+
+    case AskRandomListBetweenAsync(size, min, max) =>
+      replyToSenderAndLog(RandomGenerator.listDouble(size, min, max))
     case other =>
       log.error("Unknown event: %s", other)
   }
 
+  private def replyToSenderAndLog(result: Any) = {
+    //    log.debug("Replying to Sender " + sender + " result " + result)
+    if (sender.isDefined)
+      sender.get ! Some(result)
+  }
+
   private def replyAndLog(result: Any) = {
-//    log.debug("Replying " + result)
+    log.debug("Replying " + result)
     reply(result)
   }
 
@@ -47,7 +68,7 @@ class RandomSupplier(id: String) extends Actor {
     log.debug("post-restarting " + this)
   }
 
-  override def toString = "[RandomSupplier]"
+  override def toString = "[" + actorName + "]"
 }
 
 

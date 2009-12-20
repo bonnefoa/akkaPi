@@ -1,10 +1,11 @@
 package akkapi.random
 
+import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FixtureFlatSpec
-import se.scalablesolutions.akka.actor.{Actor, SupervisorFactory}
 import org.scalatest.FlatSpec
 import akkapi.supervisor.{DoSupervise, RandomSupervisor}
+import se.scalablesolutions.akka.actor.Actor
 
 /**
  * Test random features
@@ -45,14 +46,21 @@ class RandomTest extends FixtureFlatSpec with CheckRandomReply {
     supervisor.stop
   }
 
-
-
   "A RandomSupplier" should "supply random value when asked" in {
     random =>
-      (1 to 100).foreach {
-        i =>
-          checkReply(random !! AskRandom(), 0D, 1D)
+      checkReply(random !! AskRandom(), 0D, 1D)
+  }
+
+  it should "reply asynchronously when asked" in {
+    random =>
+      val a: Actor = actor {
+        case result:Option[Double] =>
+          checkReply(result, 0D, 1D)
+        case other=>
+          fail("response uknown : "+other)
       }
+      a.start
+      random.!(new AskRandomAsync)(a)
   }
 
   it should "supply random list value between min and max given" in {
@@ -72,7 +80,6 @@ class RandomTest extends FixtureFlatSpec with CheckRandomReply {
           checkReply(reply, i, min, max)
       }
   }
-
 }
 
 class RandomGeneratorTest extends FlatSpec with CheckRandomReply {
