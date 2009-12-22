@@ -11,9 +11,9 @@ import akkapi.random._
  * @author Anthonin Bonnefoy
  */
 
-sealed trait PiMessage
-case class EstimatePiWithNumberOfPoints(numberOfPoints: Int) extends PiMessage
-case class EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: Int) extends PiMessage
+sealed trait PiActorMessage
+case class EstimatePiWithNumberOfPoints(numberOfPoints: Int) extends PiActorMessage
+case class EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: Int) extends PiActorMessage
 
 class PiActor(id: String) extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
@@ -27,58 +27,51 @@ class PiActor(id: String) extends Actor {
   }
 
   def receive: PartialFunction[Any, Unit] = {
-    case Some(point:Double) =>
+    case Some(point: Double) =>
       log.debug("Received a point :" + point)
       piCalculatorStateful.addPoint(point)
-
-    case Some(listPoints:List[Double]) =>
+    case Some(listPoints: List[Double]) =>
       log.debug("Received a list :" + listPoints)
       piCalculatorStateful.addPoints(listPoints)
-
     case EstimatePiWithNumberOfPoints(numberOfPoints) =>
       log.debug("Received askPi with numberOfPoints :" + numberOfPoints)
-      val estimatedPi = estimatePi {
-        randomSupplier: Actor =>
-          (1 to numberOfPoints).foreach(i => {
-            randomSupplier ! new AskRandomAsync()
-            randomSupplier ! new AskRandomAsync()
-          })
-      }
-      log.debug("Estimated pi :" + estimatedPi)
-      if (sender.isDefined)
-        sender.get ! Some(estimatedPi)
-
+      piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)
+      val randomSupplier = getRandomSupplier
+      (1 to numberOfPoints).foreach(i => {
+        randomSupplier ! new AskRandomAsync()
+        randomSupplier ! new AskRandomAsync()
+      })
+    
     case EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints, batchSize) =>
       log.debug("Received askPi with numberOfPoints :" + numberOfPoints + " and batchSize " + batchSize)
-      val estimatedPi = estimatePi {
-        randomSupplier: Actor =>
-          (1 to numberOfPoints by batchSize).foreach(i => {
-            randomSupplier ! new AskRandomListAsync(batchSize)
-            randomSupplier ! new AskRandomListAsync(batchSize)
-          })
-      }
-      log.debug("Estimated pi :" + estimatedPi)
-      if (sender.isDefined)
-        sender.get ! Some(estimatedPi)
+      piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)
+      val randomSupplier = getRandomSupplier
+      (1 to numberOfPoints by batchSize).foreach(i => {
+        randomSupplier ! new AskRandomListAsync(batchSize)
+        randomSupplier ! new AskRandomListAsync(batchSize)
+      })
     case other =>
       log.error("Unknown event: %s", other)
   }
 
-  def estimatePi(askRandom: Actor => Unit): Double = {
-    piCalculatorStateful = new PiCalculatorStateful
-    val randomSupplier = getRandomSupplier
-    askRandom(randomSupplier)
-    piCalculatorStateful.processPi
-  }
+  def waitResultAndSendResponse(sender: Actor) {
+    while (!piCalculatorStateful.isComplete){
+//      this.
+    }
 
+  }
 }
 
-class PiCalculatorStateful {
+class PiCalculatorStateful(val expectedNumberOfPoints: Int) {
   var insideCircle = 0
-  var numberOfPoints = 0
+  var currentNumberOfPoints = 0
 
   var listBuffer: Option[List[Double]] = None
   var pointBuffer: Option[Double] = None
+
+  def isComplete = {
+    currentNumberOfPoints > expectedNumberOfPoints
+  }
 
   def addPoints(list: List[Double]) {
     if (listBuffer.isDefined) {
@@ -101,12 +94,12 @@ class PiCalculatorStateful {
   }
 
   def addPoint(x: Double, y: Double) {
-    numberOfPoints += 1
+    expectedNumberOfPoints += 1
     if (Math.sqrt(x * x + y * y) < 1) insideCircle += 1
   }
 
   def processPi: Double = {
-    insideCircle / numberOfPoints.asInstanceOf[Double] * 4
+    insideCircle / expectedNumberOfPoints.asInstanceOf[Double] * 4
   }
 }
 

@@ -1,5 +1,6 @@
 package akkapi.calculator
 
+import scala.actors._
 import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FixtureFlatSpec
@@ -32,21 +33,37 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
     supervisor.stop
   }
 
-  "A PiActor" should "support a great number of points" in {
+
+
+  "A PiActor" should "reply asynchronously" in {
     piActor: Actor =>
       val testActor = new TestActor()
       testActor.start
-      (1 to 50).foreach {
-        i =>
-          Time("piactor simple " + i) {
-            println (testActor.isRunning)
-            piActor.!(new EstimatePiWithNumberOfPoints(10))(testActor)
-            testActor.hasFailed should not be (true)
-            testActor.message should be("")
-            //            response.get should (be > (2.8D) and be < (3.5D))
-          }
+      val fut = future {
+        piActor.!(new EstimatePiWithNumberOfPoints(10))(testActor)
+        while (!testActor.received) {
+          Thread.sleep(100)
+        }
       }
+       await(30000, fut: _*)
   }
+
+  //  it should "support a great number of points" in {
+  //
+  //    piActor: Actor =>
+  //      val testActor = new TestActor()
+  //      testActor.start
+  //      (1 to 50).foreach {
+  //        i =>
+  //          Time("piactor simple " + i) {
+  //            println(testActor.isRunning)
+  //            piActor.!(new EstimatePiWithNumberOfPoints(10))(testActor)
+  //            testActor.hasFailed should not be (true)
+  //            testActor.message should be("")
+  //            //            response.get should (be > (2.8D) and be < (3.5D))
+  //          }
+  //      }
+  //  }
 
   //
   //  it should "supply a estimate of pi when asked" in {
@@ -115,15 +132,15 @@ class PiCalculatorTest extends FlatSpec with ShouldMatchers {
 class TestActor extends Actor {
   var hasFailed = false
   var message = ""
+  var result: Option[Double] = None
+  var received = false
 
   def receive: PartialFunction[Any, Unit] = {
     case result: Option[Double] =>
-      if (result.isEmpty) {
-        hasFailed = true
-        message = "Empty response"
-      }
-
+      received = true
+      this.result = result
     case other =>
+      received = true
       hasFailed = true
       message = "response uknown : " + other
   }
