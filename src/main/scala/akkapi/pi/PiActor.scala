@@ -1,4 +1,4 @@
-package akkapi.calculator
+package akkapi.pi
 
 import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.ScalaConfig.LifeCycle
@@ -7,11 +7,12 @@ import akkapi.random._
 import se.scalablesolutions.akka.util.Logging
 
 /**
- * Calculate Pi
+ * PiActor will supply pi estimation through differents message.<br />
+ * When it received a request, it will ask for all necessary random numbers to the Random Supplier.
+ * Once all random number are regrouped, it send asynchronously the pi estimation to the request sender.
  *
  * @author Anthonin Bonnefoy
  */
-
 sealed trait PiActorMessage
 case class EstimatePiWithNumberOfPoints(numberOfPoints: Int) extends PiActorMessage
 case class EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: Int) extends PiActorMessage
@@ -104,18 +105,3 @@ class PiCalculatorStateful(val expectedNumberOfPoints: Int)(val sender: Actor) e
     insideCircle / currentNumberOfPoints.asInstanceOf[Double] * 4
   }
 }
-
-class PiCalculator {
-  def estimatePi(randomList: List[(Double, Double)]): Double = {
-    getNumberPointsInCircle(randomList) / randomList.size.asInstanceOf[Double] * 4
-  }
-
-  def getNumberPointsInCircle(randomList: List[(Double, Double)]): Int = {
-    (0 /: randomList)((seed: Int, tuple) => {
-      val (x, y) = tuple
-      if (Math.sqrt(x * x + y * y) < 1) seed + 1
-      else seed
-    })
-  }
-}
-
