@@ -53,7 +53,7 @@ class PiActor(id: String) extends Actor {
       log.debug("Received askPi with numberOfPoints :" + numberOfPoints + " and batchSize " + batchSize)
       piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)(sender.get)
       val randomSupplier = getRandomSupplier
-      (1 to numberOfPoints by batchSize).foreach(i => {
+      (0 to numberOfPoints by batchSize).foreach(i => {
         randomSupplier ! new AskRandomListAsync(batchSize)
         randomSupplier ! new AskRandomListAsync(batchSize)
       })

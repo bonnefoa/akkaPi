@@ -33,10 +33,13 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging {
     supervisor.start
     supervisor.!(new DoSupervise(random))(supervisor)
     supervisor.!(new DoSupervise(piActor))(supervisor)
+    // wait a bit to start all actors
+    Thread.sleep(100)
     Time(test.name) {
       test((piActor, testActor))
     }
     supervisor.stop
+
   }
 
   "A PiActor" should "reply asynchronously" in {
@@ -64,31 +67,19 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging {
       log.debug(testActor.result + "")
       testActor.result.get should (be > (2.8D) and be < (3.5D))
   }
-}
 
-//
-//  it should "supply a estimate of pi when asked" in {
-//    piActor =>
-//      Time("ask pi normally") {
-//        (1 to 10).foreach {
-//          i =>
-//            val response: Option[Double] = piActor !! EstimatePiWithNumberOfPoints(1000)
-//            response should not be (None)
-//            response.get should (be > (2.8D) and be < (3.5D))
-//        }
-//      }
-//  }
-//  it should "supply an estimate of pi with batch method" in {
-//    piActor =>
-//      Time("ask pi normally with batch") {
-//        (1 to 10).foreach {
-//          i =>
-//            val response: Option[Double] = piActor !! EstimatePiWithNumberOfPointsAndBatchSize(1000, 100)
-//            response should not be (None)
-//            response.get should (be > (2.8D) and be < (3.5D))
-//        }
-//      }
-//  }
+  it should "supply an estimate of pi with batch method" in {
+    fixture =>
+      val (piActor, testActor: TestActor) = fixture
+      piActor.!(new EstimatePiWithNumberOfPointsAndBatchSize(1000, 500))(testActor)
+      while (!testActor.received) {
+        Thread.sleep(100)
+      }
+      testActor.messageFailure should be(None)
+      log.debug(testActor.result + "")
+      testActor.result.get should (be > (2.8D) and be < (3.5D))
+  }
+}
 
 
 class PiCalculatorTest extends FlatSpec with ShouldMatchers {
