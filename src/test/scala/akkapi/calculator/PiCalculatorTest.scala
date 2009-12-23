@@ -1,14 +1,13 @@
 package akkapi.calculator
 
-import scala.actors._
-import se.scalablesolutions.akka.actor.Actor._
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FixtureFlatSpec
 import akkapi.supervisor.{RandomSupervisor, DoSupervise}
 import akkapi.random.RandomSupplier
 import org.scalatest.FlatSpec
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
+import se.scalablesolutions.akka.actor.{Actor}
+
 
 /**
  * Created by IntelliJ IDEA.
@@ -33,19 +32,18 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
     supervisor.stop
   }
 
-
-
   "A PiActor" should "reply asynchronously" in {
-    piActor: Actor =>
-      val testActor = new TestActor()
-      testActor.start
-      val fut = future {
-        piActor.!(new EstimatePiWithNumberOfPoints(10))(testActor)
-        while (!testActor.received) {
-          Thread.sleep(100)
-        }
+    fixture =>
+      (1 to 10).foreach {
+        i =>
+          val piActor = fixture
+          val testActor = new TestActor()
+          testActor.start
+          piActor.!(new EstimatePiWithNumberOfPoints(100 * i))(testActor)
+          while (!testActor.received) {
+            Thread.sleep(100)
+          }
       }
-       await(30000, fut: _*)
   }
 
   //  it should "support a great number of points" in {
@@ -106,7 +104,7 @@ class PiCalculatorTest extends FlatSpec with ShouldMatchers {
   }
 
   "A PiCalculatorStateful" should "find an estimate of pi given enough point" in {
-    val piCalculatorStateful = new PiCalculatorStateful
+    val piCalculatorStateful = new PiCalculatorStateful(1000)(null)
     val seive = getSeive(0.01)
     seive.foreach(tuple => {
       piCalculatorStateful.addPoint(tuple._1, tuple._2)

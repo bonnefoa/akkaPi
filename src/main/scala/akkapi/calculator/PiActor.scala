@@ -14,11 +14,12 @@ import akkapi.random._
 sealed trait PiActorMessage
 case class EstimatePiWithNumberOfPoints(numberOfPoints: Int) extends PiActorMessage
 case class EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: Int) extends PiActorMessage
+case class PiResponse(result: Double) extends PiActorMessage
 
 class PiActor(id: String) extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
   timeout = 10000
-  var piCalculatorStateful = new PiCalculatorStateful
+  var piCalculatorStateful: PiCalculatorStateful = null
 
   def getRandomSupplier: RandomSupplier = {
     val listRandomSupplier = ActorRegistry.actorsFor(classOf[RandomSupplier])
@@ -30,21 +31,27 @@ class PiActor(id: String) extends Actor {
     case Some(point: Double) =>
       log.debug("Received a point :" + point)
       piCalculatorStateful.addPoint(point)
+      if (piCalculatorStateful.isComplete) {
+        piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
+      }
     case Some(listPoints: List[Double]) =>
       log.debug("Received a list :" + listPoints)
       piCalculatorStateful.addPoints(listPoints)
+      if (piCalculatorStateful.isComplete) {
+        piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
+      }
     case EstimatePiWithNumberOfPoints(numberOfPoints) =>
       log.debug("Received askPi with numberOfPoints :" + numberOfPoints)
-      piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)
+      piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)(sender.get)
       val randomSupplier = getRandomSupplier
       (1 to numberOfPoints).foreach(i => {
         randomSupplier ! new AskRandomAsync()
         randomSupplier ! new AskRandomAsync()
       })
-    
+
     case EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints, batchSize) =>
       log.debug("Received askPi with numberOfPoints :" + numberOfPoints + " and batchSize " + batchSize)
-      piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)
+      piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)(sender.get)
       val randomSupplier = getRandomSupplier
       (1 to numberOfPoints by batchSize).foreach(i => {
         randomSupplier ! new AskRandomListAsync(batchSize)
@@ -54,15 +61,10 @@ class PiActor(id: String) extends Actor {
       log.error("Unknown event: %s", other)
   }
 
-  def waitResultAndSendResponse(sender: Actor) {
-    while (!piCalculatorStateful.isComplete){
-//      this.
-    }
 
-  }
 }
 
-class PiCalculatorStateful(val expectedNumberOfPoints: Int) {
+class PiCalculatorStateful(val expectedNumberOfPoints: Int)(val sender: Actor) {
   var insideCircle = 0
   var currentNumberOfPoints = 0
 
@@ -70,7 +72,7 @@ class PiCalculatorStateful(val expectedNumberOfPoints: Int) {
   var pointBuffer: Option[Double] = None
 
   def isComplete = {
-    currentNumberOfPoints > expectedNumberOfPoints
+    currentNumberOfPoints >= expectedNumberOfPoints
   }
 
   def addPoints(list: List[Double]) {
@@ -94,12 +96,12 @@ class PiCalculatorStateful(val expectedNumberOfPoints: Int) {
   }
 
   def addPoint(x: Double, y: Double) {
-    expectedNumberOfPoints += 1
+    currentNumberOfPoints += 1
     if (Math.sqrt(x * x + y * y) < 1) insideCircle += 1
   }
 
   def processPi: Double = {
-    insideCircle / expectedNumberOfPoints.asInstanceOf[Double] * 4
+    insideCircle / currentNumberOfPoints.asInstanceOf[Double] * 4
   }
 }
 

@@ -60,14 +60,6 @@ class RandomSupplier(actorName: String) extends Actor {
     reply(result)
   }
 
-  override def preRestart(reason: AnyRef) {
-    log.debug("pre-restarting " + this)
-  }
-
-  override def postRestart(reason: AnyRef) {
-    log.debug("post-restarting " + this)
-  }
-
   override def toString = "[" + actorName + "]"
 }
 
