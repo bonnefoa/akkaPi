@@ -7,8 +7,8 @@ import akkapi.random.RandomSupplier
 import org.scalatest.FlatSpec
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.actor.{Actor}
-import akkapi.actor.test.TestActor
 import akkapi.test.util.Time
+import akkapi.actor.test.{ActorTester}
 
 
 /**
@@ -17,66 +17,76 @@ import akkapi.test.util.Time
  * @author Anthonin Bonnefoy
  */
 
-class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging {
+class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with ActorTester {
+  type TypeResult = Double
 
   // 1. define type FixtureParam
-  type FixtureParam = (Actor, TestActor)
+  type FixtureParam = Actor
+
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
-    val supervisor = new RandomSupervisor()
-    val random = new RandomSupplier("randomSupplier")
-    val piActor = new PiActor("piCalculator")
-    val testActor = new TestActor()
-    testActor.start
 
+    val supervisor = new RandomSupervisor()
     log.debug("Starting Supervisor")
     supervisor.start
-    supervisor.!(new DoSupervise(random))(supervisor)
-    supervisor.!(new DoSupervise(piActor))(supervisor)
+
+    val random = new RandomSupplier("randomSupplier")
+    val piActor = new PiActor("piCalculator")
+
+    initTestActor {
+      testActor => {
+        case PiResponse(piEstimate) =>
+          log.debug("Received " + piEstimate)
+          testActor.result = Some(piEstimate)
+      }
+    }
+
+    supervisor.send(new DoSupervise(random))
+    supervisor.send(new DoSupervise(piActor))
     // wait a bit to start all actors
-    Thread.sleep(100)
+    Thread.sleep(200)
     Time(test.name) {
-      test((piActor, testActor))
+      test((piActor))
     }
     supervisor.stop
-
   }
 
   "A PiActor" should "reply asynchronously" in {
     fixture =>
-      val (piActor, testActor: TestActor) = fixture
+      val (piActor) = fixture
 
       piActor.!(new EstimatePiWithNumberOfPoints(100))(testActor)
-      while (!testActor.received) {
-        Thread.sleep(100)
+
+      response {
+        (result, messageFailure) =>
+          messageFailure should be(None)
+          log.debug(result + "")
+          result.get should (be > (2.8D) and be < (3.5D))
       }
-      testActor.messageFailure should be(None)
-      log.debug(testActor.result + "")
-      testActor.result.get should (be > (2.8D) and be < (3.5D))
   }
 
   it should "support a great number of points" in {
     fixture =>
-      val (piActor, testActor: TestActor) = fixture
+      val (piActor) = fixture
       piActor.!(new EstimatePiWithNumberOfPoints(100000))(testActor)
-      while (!testActor.received) {
-        Thread.sleep(100)
+      response {
+        (result, messageFailure) =>
+          messageFailure should be(None)
+          log.debug(result + "")
+          result.get should (be > (2.8D) and be < (3.5D))
       }
-      testActor.messageFailure should be(None)
-      log.debug(testActor.result + "")
-      testActor.result.get should (be > (2.8D) and be < (3.5D))
   }
 
   it should "supply an estimate of pi with batch method" in {
     fixture =>
-      val (piActor, testActor: TestActor) = fixture
+      val (piActor) = fixture
       piActor.!(new EstimatePiWithNumberOfPointsAndBatchSize(100000, 100))(testActor)
-      while (!testActor.received) {
-        Thread.sleep(100)
+      response {
+        (result, messageFailure) =>
+          messageFailure should be(None)
+          log.debug(result + "")
+          result.get should (be > (2.8D) and be < (3.5D))
       }
-      testActor.messageFailure should be(None)
-      log.debug(testActor.result + "")
-      testActor.result.get should (be > (2.8D) and be < (3.5D))
   }
 }
 

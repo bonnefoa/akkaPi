@@ -17,9 +17,8 @@ class RandomSupervisor extends Actor {
 
   def receive: PartialFunction[Any, Unit] = {
     case DoSupervise(actor: Actor) =>
-      log.info("Supervising worker: " + actor)
+      log.debug("Supervising worker: " + actor)
       startLink(actor)
-
     case unknown =>
       log.error("Unknown event: %s", unknown)
   }
