@@ -39,10 +39,8 @@ class RandomSupplier(actorName: String) extends Actor {
       replyToSenderAndLog(RandomGenerator.nextDouble)
     case AskRandomBetweenAsync(min, max) =>
       replyToSenderAndLog(RandomGenerator.nextDouble(min, max))
-
     case AskRandomListAsync(size) =>
       replyToSenderAndLog(RandomGenerator.listDouble(size))
-
     case AskRandomListBetweenAsync(size, min, max) =>
       replyToSenderAndLog(RandomGenerator.listDouble(size, min, max))
     case other =>

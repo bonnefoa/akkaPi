@@ -4,6 +4,7 @@ import se.scalablesolutions.akka.config.ScalaConfig._
 import se.scalablesolutions.akka.config.ScalaConfig.LifeCycle
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
 import akkapi.random._
+import se.scalablesolutions.akka.util.Logging
 
 /**
  * Calculate Pi
@@ -34,8 +35,9 @@ class PiActor(id: String) extends Actor {
       if (piCalculatorStateful.isComplete) {
         piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
       }
+
     case Some(listPoints: List[Double]) =>
-      log.debug("Received a list :" + listPoints)
+      //      log.debug("Received a list :" + listPoints)
       piCalculatorStateful.addPoints(listPoints)
       if (piCalculatorStateful.isComplete) {
         piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
@@ -50,10 +52,9 @@ class PiActor(id: String) extends Actor {
       })
 
     case EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints, batchSize) =>
-      log.debug("Received askPi with numberOfPoints :" + numberOfPoints + " and batchSize " + batchSize)
       piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)(sender.get)
       val randomSupplier = getRandomSupplier
-      (0 to numberOfPoints by batchSize).foreach(i => {
+      (0 until numberOfPoints by batchSize).foreach(i => {
         randomSupplier ! new AskRandomListAsync(batchSize)
         randomSupplier ! new AskRandomListAsync(batchSize)
       })
@@ -64,7 +65,7 @@ class PiActor(id: String) extends Actor {
 
 }
 
-class PiCalculatorStateful(val expectedNumberOfPoints: Int)(val sender: Actor) {
+class PiCalculatorStateful(val expectedNumberOfPoints: Int)(val sender: Actor) extends Logging {
   var insideCircle = 0
   var currentNumberOfPoints = 0
 
@@ -90,9 +91,7 @@ class PiCalculatorStateful(val expectedNumberOfPoints: Int)(val sender: Actor) {
   }
 
   def addPoints(listX: List[Double], listY: List[Double]) {
-    for{x <- listX
-        y <- listY
-    } yield addPoint(x, y)
+    (listX zip listY).foreach(tuple => addPoint(tuple._1, tuple._2))
   }
 
   def addPoint(x: Double, y: Double) {
@@ -101,6 +100,7 @@ class PiCalculatorStateful(val expectedNumberOfPoints: Int)(val sender: Actor) {
   }
 
   def processPi: Double = {
+    log.debug("Processing pi with " + currentNumberOfPoints + " points")
     insideCircle / currentNumberOfPoints.asInstanceOf[Double] * 4
   }
 }

@@ -53,7 +53,6 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging {
       testActor.messageFailure should be(None)
       log.debug(testActor.result + "")
       testActor.result.get should (be > (2.8D) and be < (3.5D))
-
   }
 
   it should "support a great number of points" in {
@@ -71,7 +70,7 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging {
   it should "supply an estimate of pi with batch method" in {
     fixture =>
       val (piActor, testActor: TestActor) = fixture
-      piActor.!(new EstimatePiWithNumberOfPointsAndBatchSize(1000, 500))(testActor)
+      piActor.!(new EstimatePiWithNumberOfPointsAndBatchSize(100000, 100))(testActor)
       while (!testActor.received) {
         Thread.sleep(100)
       }
