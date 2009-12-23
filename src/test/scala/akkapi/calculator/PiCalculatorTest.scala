@@ -7,6 +7,8 @@ import akkapi.random.RandomSupplier
 import org.scalatest.FlatSpec
 import se.scalablesolutions.akka.util.Logging
 import se.scalablesolutions.akka.actor.{Actor}
+import akkapi.actor.test.TestActor
+import akkapi.test.util.Time
 
 
 /**
@@ -15,77 +17,79 @@ import se.scalablesolutions.akka.actor.{Actor}
  * @author Anthonin Bonnefoy
  */
 
-class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
+class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging {
 
   // 1. define type FixtureParam
-  type FixtureParam = Actor
+  type FixtureParam = (Actor, TestActor)
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
     val supervisor = new RandomSupervisor()
     val random = new RandomSupplier("randomSupplier")
     val piActor = new PiActor("piCalculator")
-    println("Starting Supervisor")
+    val testActor = new TestActor()
+    testActor.start
+
+    log.debug("Starting Supervisor")
     supervisor.start
     supervisor.!(new DoSupervise(random))(supervisor)
     supervisor.!(new DoSupervise(piActor))(supervisor)
     Time(test.name) {
-      test(piActor)
+      test((piActor, testActor))
     }
     supervisor.stop
   }
 
   "A PiActor" should "reply asynchronously" in {
     fixture =>
-      val piActor = fixture
-      val testActor = new TestActor()
-      testActor.start
+      val (piActor, testActor: TestActor) = fixture
+
       piActor.!(new EstimatePiWithNumberOfPoints(100))(testActor)
       while (!testActor.received) {
         Thread.sleep(100)
       }
+      testActor.messageFailure should be(None)
+      log.debug(testActor.result + "")
+      testActor.result.get should (be > (2.8D) and be < (3.5D))
+
   }
 
-  //  it should "support a great number of points" in {
-  //
-  //    piActor: Actor =>
-  //      val testActor = new TestActor()
-  //      testActor.start
-  //      (1 to 50).foreach {
-  //        i =>
-  //          Time("piactor simple " + i) {
-  //            println(testActor.isRunning)
-  //            piActor.!(new EstimatePiWithNumberOfPoints(10))(testActor)
-  //            testActor.hasFailed should not be (true)
-  //            testActor.message should be("")
-  //            //            response.get should (be > (2.8D) and be < (3.5D))
-  //          }
-  //      }
-  //  }
-
-  //
-  //  it should "supply a estimate of pi when asked" in {
-  //    piActor =>
-  //      Time("ask pi normally") {
-  //        (1 to 10).foreach {
-  //          i =>
-  //            val response: Option[Double] = piActor !! EstimatePiWithNumberOfPoints(1000)
-  //            response should not be (None)
-  //            response.get should (be > (2.8D) and be < (3.5D))
-  //        }
-  //      }
-  //  }
-  //  it should "supply an estimate of pi with batch method" in {
-  //    piActor =>
-  //      Time("ask pi normally with batch") {
-  //        (1 to 10).foreach {
-  //          i =>
-  //            val response: Option[Double] = piActor !! EstimatePiWithNumberOfPointsAndBatchSize(1000, 100)
-  //            response should not be (None)
-  //            response.get should (be > (2.8D) and be < (3.5D))
-  //        }
-  //      }
-  //  }
+  it should "support a great number of points" in {
+    fixture =>
+      val (piActor, testActor: TestActor) = fixture
+      piActor.!(new EstimatePiWithNumberOfPoints(100000))(testActor)
+      while (!testActor.received) {
+        Thread.sleep(100)
+      }
+      testActor.messageFailure should be(None)
+      log.debug(testActor.result + "")
+      testActor.result.get should (be > (2.8D) and be < (3.5D))
+  }
 }
+
+//
+//  it should "supply a estimate of pi when asked" in {
+//    piActor =>
+//      Time("ask pi normally") {
+//        (1 to 10).foreach {
+//          i =>
+//            val response: Option[Double] = piActor !! EstimatePiWithNumberOfPoints(1000)
+//            response should not be (None)
+//            response.get should (be > (2.8D) and be < (3.5D))
+//        }
+//      }
+//  }
+//  it should "supply an estimate of pi with batch method" in {
+//    piActor =>
+//      Time("ask pi normally with batch") {
+//        (1 to 10).foreach {
+//          i =>
+//            val response: Option[Double] = piActor !! EstimatePiWithNumberOfPointsAndBatchSize(1000, 100)
+//            response should not be (None)
+//            response.get should (be > (2.8D) and be < (3.5D))
+//        }
+//      }
+//  }
+
 
 class PiCalculatorTest extends FlatSpec with ShouldMatchers {
   val piCalculator = new PiCalculator
@@ -122,36 +126,5 @@ class PiCalculatorTest extends FlatSpec with ShouldMatchers {
         getSeive(x + step, y, (x, y) :: list, step)
     }
     getSeive(0, 0, Nil, step)
-  }
-}
-
-
-class TestActor extends Actor {
-  var hasFailed = false
-  var message = ""
-  var result: Option[Double] = None
-  var received = false
-
-  def receive: PartialFunction[Any, Unit] = {
-    case result: Option[Double] =>
-      received = true
-      this.result = result
-    case other =>
-      received = true
-      hasFailed = true
-      message = "response uknown : " + other
-  }
-
-}
-
-object Time extends Logging {
-  def apply[T](name: String)(block: => T) {
-    val start = System.currentTimeMillis
-    try {
-      block
-    } finally {
-      val diff = System.currentTimeMillis - start
-      log.debug("Block \"" + name + "\" completed, time taken: " + diff + " ms (" + diff / 1000.0 + " s)")
-    }
   }
 }

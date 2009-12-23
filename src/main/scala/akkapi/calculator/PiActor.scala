@@ -29,7 +29,7 @@ class PiActor(id: String) extends Actor {
 
   def receive: PartialFunction[Any, Unit] = {
     case Some(point: Double) =>
-      log.debug("Received a point :" + point)
+      //      log.debug("Received a point :" + point)
       piCalculatorStateful.addPoint(point)
       if (piCalculatorStateful.isComplete) {
         piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
@@ -118,3 +118,4 @@ class PiCalculator {
     })
   }
 }
+
