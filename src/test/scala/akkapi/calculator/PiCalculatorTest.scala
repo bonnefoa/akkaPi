@@ -28,21 +28,20 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers {
     supervisor.start
     supervisor.!(new DoSupervise(random))(supervisor)
     supervisor.!(new DoSupervise(piActor))(supervisor)
-    test(piActor)
+    Time(test.name) {
+      test(piActor)
+    }
     supervisor.stop
   }
 
   "A PiActor" should "reply asynchronously" in {
     fixture =>
-      (1 to 10).foreach {
-        i =>
-          val piActor = fixture
-          val testActor = new TestActor()
-          testActor.start
-          piActor.!(new EstimatePiWithNumberOfPoints(100 * i))(testActor)
-          while (!testActor.received) {
-            Thread.sleep(100)
-          }
+      val piActor = fixture
+      val testActor = new TestActor()
+      testActor.start
+      piActor.!(new EstimatePiWithNumberOfPoints(100))(testActor)
+      while (!testActor.received) {
+        Thread.sleep(100)
       }
   }
 
@@ -155,5 +154,4 @@ object Time extends Logging {
       log.debug("Block \"" + name + "\" completed, time taken: " + diff + " ms (" + diff / 1000.0 + " s)")
     }
   }
-
 }
