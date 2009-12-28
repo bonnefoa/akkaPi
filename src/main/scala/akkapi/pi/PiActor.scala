@@ -1,7 +1,5 @@
 package akkapi.pi
 
-import se.scalablesolutions.akka.config.ScalaConfig._
-import se.scalablesolutions.akka.config.ScalaConfig.LifeCycle
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
 import akkapi.random._
 import se.scalablesolutions.akka.util.Logging
@@ -16,13 +14,11 @@ import se.scalablesolutions.akka.util.Logging
 sealed trait PiActorMessage
 case class EstimatePiWithNumberOfPoints(numberOfPoints: Int) extends PiActorMessage
 case class EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: Int) extends PiActorMessage
-case class PiResponse(result: Double) extends PiActorMessage
+case class PiResponse(result: Double, numberOfPoints: Int) extends PiActorMessage
 
 class PiActor(id: String) extends Actor {
-  lifeCycle = Some(LifeCycle(Permanent))
   timeout = 10000
 
-  //  val mapPiActorStateful = new Map[String, PiCalculatorStateful]
   var piCalculatorStateful: PiCalculatorStateful = null
 
   def getRandomSupplier: RandomSupplier = {
@@ -37,14 +33,14 @@ class PiActor(id: String) extends Actor {
 
       piCalculatorStateful.addPoint(point)
       if (piCalculatorStateful.isComplete) {
-        piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
+        piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi, piCalculatorStateful.currentNumberOfPoints)
       }
 
     case Some(listPoints: List[Double]) =>
       //      log.debug("Received a list :" + listPoints)
       piCalculatorStateful.addPoints(listPoints)
       if (piCalculatorStateful.isComplete) {
-        piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
+        piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi, piCalculatorStateful.currentNumberOfPoints)
       }
     case EstimatePiWithNumberOfPoints(numberOfPoints) =>
       log.debug("Received askPi with numberOfPoints :" + numberOfPoints)
