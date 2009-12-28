@@ -1,8 +1,8 @@
 package akkapi.recorder
 
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
-import akkapi.pi.{EstimatePiWithNumberOfPointsAndBatchSize, PiActor}
 import se.scalablesolutions.akka.util.Logging
+import akkapi.pi.{PiResponse, EstimatePiWithNumberOfPointsAndBatchSize, PiActor}
 
 /**
  * Configure actor manager
@@ -32,6 +32,10 @@ class ResultRecorder extends Actor with Logging {
   }
 
   def receive: PartialFunction[Any, Unit] = {
+    case AskPiStatistique =>
+      log.debug("Sending piStatistique " + piStatistique + " to " + sender)
+      if (sender.isDefined)
+        sender.get ! new Some(piStatistique)
     case PiResponse(piEstimate, numberOfPoints) =>
       log.debug("Received " + piEstimate)
       piStatistique = piStatistique.addResult(PiResult(piEstimate, numberOfPoints))
@@ -42,7 +46,6 @@ class ResultRecorder extends Actor with Logging {
   def sendRequestForPi(numberOfPoints: Int) = {
     getPiActor ! (EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints, defaultBatchSize))
   }
-
 }
 
 case class PiStatistique(listResult: List[PiResult]) {
@@ -63,4 +66,6 @@ case class PiStatistique(listResult: List[PiResult]) {
  * Weight : Number of random points used to find this estimation.
  */
 case class PiResult(value: Double, weight: Double)
-case class ResultRecorderMessage(piStatistique: PiStatistique)
+
+case class AskPiStatistique()
+case class PiStatistiqueResponse(piStatistique: Option[PiStatistique])

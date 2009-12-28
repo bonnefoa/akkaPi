@@ -20,15 +20,15 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
   type TypeResult = PiStatistique
 
   // 1. define type FixtureParam
-  type FixtureParam = Actor
+  type FixtureParam = ResultRecorder
 
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
     initActorTester {
       testActor => {
-        case ResultRecorderMessage(resultResponse) =>
-          log.debug("Received " + resultResponse)
-          testActor.result = Some(resultResponse)
+        case piStatistique: Option[PiStatistique] =>
+          log.debug("Received " + piStatistique)
+          testActor.result = piStatistique
       }
     }
     Time(test.name) {
@@ -37,17 +37,22 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
     stopActorTester
   }
 
-  //  "A resultRecorder" should "reply asynchronously" in {
-  //    fixture =>
-  //      val (piActor) = fixture
-  //      //      piActor.!(new EstimatePiWithNumberOfPoints(100))(testActor)
-  //      response {
-  //        (result, messageFailure) =>
-  //        //          messageFailure should be(None)
-  //        //          log.debug(result + "")
-  //        //          result.get should (be > (2.8D) and be < (3.5D))
-  //      }
-  //  }
+  "A resultRecorder" should "get pi estimation to fill piStatistique" in {
+    fixture =>
+      val (recorder: ResultRecorder) = fixture
+      (1 to 10).foreach(_ => recorder.sendRequestForPi(10000))
+      recorder.!(new AskPiStatistique())(testActor)
+      response {
+        (result, messageFailure) =>
+          messageFailure should be(None)
+          log.debug(result + "")
+          result should not be (None)
+          val piStat: TypeResult = result.get
+          piStat.totalweight should be(1000 * 10)
+          piStat.mean should (be > (3.1D) and be < (3.2D))
+        //          result.get should (be > (2.8D) and be < (3.5D))
+      }
+  }
 }
 
 class PiStatistiqueTest extends FlatSpec with ShouldMatchers with Logging {
