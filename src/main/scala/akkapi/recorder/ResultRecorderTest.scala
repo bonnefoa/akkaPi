@@ -5,7 +5,6 @@ import org.scalatest.fixture.FixtureFlatSpec
 import org.scalatest.matchers.ShouldMatchers
 import se.scalablesolutions.akka.util.Logging
 import akkapi.actor.test.util.ActorTester
-import se.scalablesolutions.akka.actor.Actor
 import akkapi.test.util.Time
 import org.scalatest.FlatSpec
 
@@ -26,9 +25,9 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
   def withFixture(test: OneArgTest) {
     initActorTester {
       testActor => {
-        case piStatistique: Option[PiStatistique] =>
-          log.debug("Received " + piStatistique)
-          testActor.result = piStatistique
+        case piStatistiqueResponse: PiStatistiqueResponse =>
+          log.debug("Received " + piStatistiqueResponse)
+          testActor.result = Some(piStatistiqueResponse.piStatistique)
       }
     }
     Time(test.name) {
@@ -41,6 +40,8 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
     fixture =>
       val (recorder: ResultRecorder) = fixture
       (1 to 10).foreach(_ => recorder.sendRequestForPi(10000))
+      Thread.sleep(10000)
+
       recorder.!(new AskPiStatistique())(testActor)
       response {
         (result, messageFailure) =>
@@ -50,7 +51,6 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
           val piStat: TypeResult = result.get
           piStat.totalweight should be(1000 * 10)
           piStat.mean should (be > (3.1D) and be < (3.2D))
-        //          result.get should (be > (2.8D) and be < (3.5D))
       }
   }
 }
