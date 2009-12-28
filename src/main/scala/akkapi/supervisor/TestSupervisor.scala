@@ -7,6 +7,7 @@ import akkapi.pi.PiActor
 import org.scalatest.{Suite, BeforeAndAfterAll}
 import se.scalablesolutions.akka.util.Logging
 import org.scalatest.matchers.ShouldMatchers
+import akkapi.recorder.ResultRecorder
 
 /**
  * Test supervisor. Provide a running supervisor before suite.
@@ -15,13 +16,17 @@ import org.scalatest.matchers.ShouldMatchers
 
 trait TestSupervisor extends Suite with ShouldMatchers with BeforeAndAfterAll with Logging {
   lazy val random = new RandomSupplier("randomSupplier")
+  lazy val resultRecorder = new ResultRecorder
   lazy val piActor = new PiActor("piCalculator")
   lazy val supervisor = factory.newInstance
 
   lazy val factory = SupervisorFactory(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 10, List(classOf[Exception])),
-      Supervise(random, LifeCycle(Permanent)) :: Supervise(piActor, LifeCycle(Permanent)) :: Nil)
+      Supervise(random, LifeCycle(Permanent)) ::
+              Supervise(piActor, LifeCycle(Permanent)) ::
+              Supervise(resultRecorder, LifeCycle(Permanent)) ::
+              Nil)
     )
 
   /**

@@ -8,10 +8,13 @@ import se.scalablesolutions.akka.actor.Actor
  * @author Anthonin Bonnefoy
  */
 
+case class ResultRecorderResponse(piStat: PiStatistique)
+
 class ResultRecorder extends Actor {
   def receive: PartialFunction[Any, Unit] = {
     case other =>
       log.error("Unknown response : " + other)
   }
-
 }
+
+case class PiStatistique()
