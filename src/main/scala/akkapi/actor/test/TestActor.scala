@@ -4,7 +4,8 @@ import se.scalablesolutions.akka.actor.{Actor}
 import se.scalablesolutions.akka.util.Logging
 
 /**
- * Actor for testing purpose
+ * Actor for testing purpose. It provides a testActor for receiving response from actors. You have to define the type of response
+ * you expect through TypeResult and configure testActor through initTestActor.
  *
  * @author Anthonin Bonnefoy
  */
@@ -20,15 +21,31 @@ trait ActorTester extends Logging {
     testActor.receiveFunction = block(testActor)
   }
 
-
-  def response(block: (Option[TypeResult], Option[String]) => Unit) {
+  def waitResponse = {
     while (!testActor.received) {
       Thread.sleep(100)
     }
+  }
+
+  def response(block: (Option[TypeResult]) => Unit) {
+    waitResponse
+    block(testActor.result)
+  }
+
+  def response(block: (Option[TypeResult], Option[String]) => Unit) {
+    waitResponse
     block(testActor.result, testActor.messageFailure)
+  }
+
+  def stopActor() {
+    testActor.stop
   }
 }
 
+/**
+ * Actor aimed to receive and store a response message.
+ * You can configure the received function to store a result which will be accessible through response ActorTester.
+ */
 class TestActor[T] extends Actor {
   var messageFailure: Option[String] = None
   var result: Option[T] = None

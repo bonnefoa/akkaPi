@@ -24,7 +24,6 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
 
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
-
     val supervisor = new RandomSupervisor()
     log.debug("Starting Supervisor")
     supervisor.start
@@ -45,9 +44,10 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
     // wait a bit to start all actors
     Thread.sleep(200)
     Time(test.name) {
-      test((piActor))
+      test(piActor)
     }
     supervisor.stop
+    stopActor
   }
 
   "A PiActor" should "reply asynchronously" in {

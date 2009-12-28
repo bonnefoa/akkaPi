@@ -1,9 +1,11 @@
-package akkapi;
+package akkapi
+
+;
 
 /**
  * Hello world!
  *
  */
 object App extends Application {
-  println( "Hello World!" );
+  println("Hello World!");
 }

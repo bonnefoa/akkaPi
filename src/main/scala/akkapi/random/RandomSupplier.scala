@@ -11,13 +11,9 @@ import se.scalablesolutions.akka.actor.Actor
  */
 
 sealed trait RandomMessage
-case class AskRandom() extends RandomMessage
 case class AskRandomAsync() extends RandomMessage
-case class AskRandomBetween(min: Double, max: Double) extends RandomMessage
 case class AskRandomBetweenAsync(min: Double, max: Double) extends RandomMessage
-case class AskRandomListBetween(size: Int, min: Double, max: Double) extends RandomMessage
 case class AskRandomListBetweenAsync(size: Int, min: Double, max: Double) extends RandomMessage
-case class AskRandomList(size: Int) extends RandomMessage
 case class AskRandomListAsync(size: Int) extends RandomMessage
 
 
@@ -27,14 +23,6 @@ class RandomSupplier(actorName: String) extends Actor {
   id = actorName
 
   def receive: PartialFunction[Any, Unit] = {
-    case AskRandom() =>
-      replyAndLog(RandomGenerator.nextDouble)
-    case AskRandomBetween(min, max) =>
-      replyAndLog(RandomGenerator.nextDouble(min, max))
-    case AskRandomList(size) =>
-      replyAndLog(RandomGenerator.listDouble(size))
-    case AskRandomListBetween(size, min, max) =>
-      replyAndLog(RandomGenerator.listDouble(size, min, max))
     case AskRandomAsync() =>
       replyToSenderAndLog(RandomGenerator.nextDouble)
     case AskRandomBetweenAsync(min, max) =>

@@ -3,7 +3,7 @@ package akkapi.random
 import org.scalatest.matchers.ShouldMatchers
 
 /**
- * Created by IntelliJ IDEA.
+ * Trait providing methods to check result of RandomSupplier 
  *
  * @author Anthonin Bonnefoy
  */

@@ -1,87 +1,94 @@
 package akkapi.random
 
-import se.scalablesolutions.akka.actor.Actor._
-import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FixtureFlatSpec
 import org.scalatest.FlatSpec
 import akkapi.supervisor.{DoSupervise, RandomSupervisor}
 import se.scalablesolutions.akka.actor.Actor
+import se.scalablesolutions.akka.util.Logging
+import akkapi.actor.test.{TestActor, ActorTester}
 
-/**
- * Test random features
- *
- * @author Anthonin Bonnefoy
- */
+abstract class BaseRandomActorTest extends FixtureFlatSpec with CheckRandomReply with Logging with ActorTester {
+  type OptionResult = Option[TypeResult]
 
-class SupervisorTest extends FlatSpec with ShouldMatchers {
-  "A supervisor Test" should "start stop and actor should still work" in {
-    var random = new RandomSupplier("randomSupplier")
+  type FixtureParam = (Actor, TestActor[TypeResult])
 
-    val supervisor = new RandomSupervisor()
-    supervisor.start
-    supervisor.!(new DoSupervise(random))(supervisor)
-    random !! AskRandom() should not be (None)
-    supervisor.stop
-
-    val second = new RandomSupplier("randomSupplier2")
-    second.start
-    second !! AskRandom() should not be (None)
-    second.stop
-  }
-}
-
-class RandomTest extends FixtureFlatSpec with CheckRandomReply {
-
-  // 1. define type FixtureParam
-  type FixtureParam = Actor
-  // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
     val supervisor = new RandomSupervisor()
     val random = new RandomSupplier("randomSupplier")
     supervisor.start
-    println("\n===> starting supervisor")
-    supervisor.!(new DoSupervise(random))(supervisor)
-    test(random)
-    println("\n===> stoping supervisor")
+    log.debug("===> starting supervisor")
+    supervisor.send(new DoSupervise(random))
+
+    initTestActor {
+      testActor => {
+        case result: OptionResult =>
+          testActor.result = result
+      }
+    }
+    // wait a bit to start all actors
+    Thread.sleep(200)
+
+    test((random, testActor))
+    log.debug("===> stoping supervisor")
+    stopActor
     supervisor.stop
   }
+}
+
+/**
+ * Test randomSupplier actor features
+ *
+ * @author Anthonin Bonnefoy
+ */
+class RandomTestSingleElement extends BaseRandomActorTest {
+  type TypeResult = Double
 
   "A RandomSupplier" should "supply random value when asked" in {
-    random =>
-      checkReply(random !! AskRandom(), 0D, 1D)
-  }
-
-  it should "reply asynchronously when asked" in {
-    random =>
-      val a: Actor = actor {
-        case result:Option[Double] =>
+    fixture =>
+      val (random, testActor) = fixture
+      random.!(new AskRandomAsync)(testActor)
+      response {
+        result =>
           checkReply(result, 0D, 1D)
-        case other=>
-          fail("response uknown : "+other)
       }
-      a.start
-      random.!(new AskRandomAsync)(a)
   }
 
   it should "supply random list value between min and max given" in {
-    random =>
+    fixture =>
+      val (random, testActor) = fixture
       (1 to 100).foreach {
         i =>
-          checkReply(random !! AskRandomBetween(i * 1D, i * 2D), i * 1D, i * 2D)
-      }
-  }
-  it should "supply random list value when asked" in {
-    random =>
-      (1 to 100).foreach {
-        i =>
-          val min = i * 1D
-          val max = i * 2D
-          val reply: Option[List[Double]] = (random !! AskRandomListBetween(i, min, max))
-          checkReply(reply, i, min, max)
+          random.!(AskRandomBetweenAsync(i * 1D, i * 2D))(testActor)
+          response(result =>
+            checkReply(result, i * 1D, i * 2D)
+            )
       }
   }
 }
 
+class RandomTestListElement extends BaseRandomActorTest {
+  override type TypeResult = List[Double]
+
+  "A random supplier" should "supply random list value when asked" in {
+    fixture =>
+      val (random, testActor) = fixture
+      (1 to 100).foreach {
+        i =>
+          val min = i * 1D
+          val max = i * 2D
+          random.!(new AskRandomListBetweenAsync(i, min, max))(testActor)
+          response {
+            result =>
+              checkReply(result, i, min, max)
+          }
+      }
+  }
+
+}
+
+/**
+ * Test the random generator
+ */
 class RandomGeneratorTest extends FlatSpec with CheckRandomReply {
   "A RandomGenerator" should "generate random value between 0 and 1 " in {
     (1 to 100).foreach {
