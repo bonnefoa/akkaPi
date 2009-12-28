@@ -4,8 +4,8 @@ import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FixtureFlatSpec
 import se.scalablesolutions.akka.util.Logging
 import akkapi.test.util.Time
-import akkapi.actor.test.{ActorTester}
-import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import akkapi.actor.test.util.{ActorTester}
+import se.scalablesolutions.akka.actor.Actor
 import org.scalatest.BeforeAndAfterAll
 import akkapi.supervisor.TestSupervisor
 

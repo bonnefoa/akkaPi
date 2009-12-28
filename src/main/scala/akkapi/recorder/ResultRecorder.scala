@@ -13,4 +13,5 @@ class ResultRecorder extends Actor {
     case other =>
       log.error("Unknown response : " + other)
   }
+
 }

@@ -4,8 +4,8 @@ import org.scalatest.fixture.FixtureFlatSpec
 import org.scalatest.FlatSpec
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.util.Logging
-import akkapi.actor.test.{TestActor, ActorTester}
 import akkapi.supervisor.{TestSupervisor}
+import akkapi.actor.test.util.{TestActor, ActorTester}
 
 abstract class BaseRandomActorTest extends FixtureFlatSpec with CheckRandomReply with Logging with ActorTester with TestSupervisor {
   type OptionResult = Option[TypeResult]

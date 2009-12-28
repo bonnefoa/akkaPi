@@ -1,4 +1,4 @@
-package akkapi.actor.test
+package akkapi.actor.test.util
 
 import se.scalablesolutions.akka.actor.{Actor}
 import se.scalablesolutions.akka.util.Logging
