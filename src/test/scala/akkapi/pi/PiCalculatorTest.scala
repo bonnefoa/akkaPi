@@ -6,9 +6,7 @@ import se.scalablesolutions.akka.util.Logging
 import akkapi.test.util.Time
 import akkapi.actor.test.util.{ActorTester}
 import se.scalablesolutions.akka.actor.Actor
-import org.scalatest.BeforeAndAfterAll
 import akkapi.supervisor.TestSupervisor
-
 
 /**
  * PiActor will supply pi estimation through differents message 
@@ -16,7 +14,7 @@ import akkapi.supervisor.TestSupervisor
  * @author Anthonin Bonnefoy
  */
 
-class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with ActorTester with BeforeAndAfterAll with TestSupervisor {
+class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with ActorTester with TestSupervisor {
 
   // Define type of expected result
   type TypeResult = Double
