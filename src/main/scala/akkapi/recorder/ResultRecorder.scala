@@ -27,21 +27,23 @@ class ResultRecorder extends Actor with Logging {
 
   def getFreePiActor: Option[Actor] = {
     val listPiActor = ActorRegistry.actorsFor(classOf[PiActor]).asInstanceOf[List[PiActor]]
-    val filteredList = listPiActor
-            .filter((actor: PiActor) => !actor.busy)
+    val filteredList = listPiActor.filter((actor: PiActor) => !actor.busy)
     if (filteredList == Nil) None
     else Some(filteredList.head.asInstanceOf[Actor])
   }
 
 
   def receive: PartialFunction[Any, Unit] = {
-    case askPiStatistique: AskPiStatistique =>
+    case RequestRecorderPiEstimateRequests(numberOfPoints) =>
+      log.debug("Request pi")
+      sendRequestForPi(numberOfPoints)
+    case askPiStatistique: RequestRecorderAskPiStatistique =>
       log.debug("Sending piStatistique " + piStatistique + " to " + sender)
       if (sender.isDefined)
-        sender.get ! new PiStatistiqueResponse(piStatistique)
+        sender.get ! new RequestRecorderPiStatistiqueResponse(piStatistique)
     case PiResponse(piEstimate, numberOfPoints) =>
       log.debug("Received " + piEstimate)
-      piStatistique = piStatistique.addResult(PiResult(piEstimate, numberOfPoints))
+      piStatistique = piStatistique.addResult(RequestRecorderPiResult(piEstimate, numberOfPoints))
     case other =>
       log.error("Unknown response : " + other)
   }
@@ -51,15 +53,13 @@ class ResultRecorder extends Actor with Logging {
     if (freeActors.isDefined)
       freeActors.get ! (EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints, defaultBatchSize))
     else {
-      log.debug("No free actors for the moment, waiting")
-      Thread.sleep(100)
-      sendRequestForPi(numberOfPoints)
+      log.debug("No free actors for the moment, retry later")
     }
   }
 }
 
-case class PiStatistique(listResult: List[PiResult]) {
-  def addResult(piResult: PiResult): PiStatistique = {
+case class PiStatistique(listResult: List[RequestRecorderPiResult]) {
+  def addResult(piResult: RequestRecorderPiResult): PiStatistique = {
     new PiStatistique(piResult :: listResult)
   }
 
@@ -75,7 +75,8 @@ case class PiStatistique(listResult: List[PiResult]) {
  * Value : Pi estimation found.<br />
  * Weight : Number of random points used to find this estimation.
  */
-case class PiResult(value: Double, weight: Double)
+case class RequestRecorderPiResult(value: Double, weight: Double)
 
-case class AskPiStatistique()
-case class PiStatistiqueResponse(piStatistique: PiStatistique)
+case class RequestRecorderPiEstimateRequests(numberOfPoints: Int)
+case class RequestRecorderAskPiStatistique()
+case class RequestRecorderPiStatistiqueResponse(piStatistique: PiStatistique)

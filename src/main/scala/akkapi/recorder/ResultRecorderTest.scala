@@ -7,6 +7,7 @@ import se.scalablesolutions.akka.util.Logging
 import akkapi.actor.test.util.ActorTester
 import akkapi.test.util.Time
 import org.scalatest.FlatSpec
+import java.lang.Thread
 
 /**
  * Test of the result recorder.
@@ -25,7 +26,7 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
   def withFixture(test: OneArgTest) {
     initActorTester {
       testActor => {
-        case piStatistiqueResponse: PiStatistiqueResponse =>
+        case piStatistiqueResponse: RequestRecorderPiStatistiqueResponse =>
           log.debug("Received " + piStatistiqueResponse)
           testActor.result = Some(piStatistiqueResponse.piStatistique)
       }
@@ -39,10 +40,9 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
   "A resultRecorder" should "get pi estimation to fill piStatistique" in {
     fixture =>
       val (recorder: ResultRecorder) = fixture
-      (1 to 10).foreach(_ => recorder.sendRequestForPi(10000))
-      Thread.sleep(10000)
-
-      recorder.!(new AskPiStatistique())(testActor)
+      (1 to 10).foreach(_ => recorder.send(new RequestRecorderPiEstimateRequests(1000)))
+      Thread.sleep(1000)
+      recorder.!(new RequestRecorderAskPiStatistique())(testActor)
       response {
         (result, messageFailure) =>
           messageFailure should be(None)
@@ -57,7 +57,7 @@ class ResultRecorderTest extends FixtureFlatSpec with ShouldMatchers with Loggin
 
 class PiStatistiqueTest extends FlatSpec with ShouldMatchers with Logging {
   val piStatistique = PiStatistique(
-    List(PiResult(3.6, 50), PiResult(2.6, 10), PiResult(3.1, 40))
+    List(RequestRecorderPiResult(3.6, 50), RequestRecorderPiResult(2.6, 10), RequestRecorderPiResult(3.1, 40))
     )
 
   "A PiStatistique " should "return correct weight when asked" in {
