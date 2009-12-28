@@ -3,6 +3,7 @@ package akkapi.pi
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
 import akkapi.random._
 import se.scalablesolutions.akka.util.Logging
+import akkapi.balancer.Balancer
 
 /**
  * PiActor will supply pi estimation through differents message.<br />
@@ -17,18 +18,13 @@ case class EstimatePiWithNumberOfPoints(numberOfPoints: Int) extends PiActorMess
 case class EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints: Int, batchSize: Int) extends PiActorMessage
 case class PiResponse(result: Double, numberOfPoints: Int) extends PiActorMessage
 
-class PiActor(id: String) extends Actor {
+class PiActor extends Actor {
   timeout = 10000
 
   var busy = false
 
   var piCalculatorStateful: PiCalculatorStateful = null
 
-  def getRandomSupplier: RandomSupplier = {
-    val listRandomSupplier = ActorRegistry.actorsFor(classOf[RandomSupplier])
-    log.debug("Got randomSupplierList " + listRandomSupplier)
-    listRandomSupplier.head.asInstanceOf[RandomSupplier]
-  }
 
   def receive: PartialFunction[Any, Unit] = {
     case Some(point: Double) =>
@@ -75,7 +71,7 @@ class PiActor(id: String) extends Actor {
     } else {
       busy = true
       piCalculatorStateful = new PiCalculatorStateful(numberOfPoints)(sender.get)
-      val randomSupplier = getRandomSupplier
+      val randomSupplier = Balancer.getRandomSupplier
       block(randomSupplier)
     }
   }

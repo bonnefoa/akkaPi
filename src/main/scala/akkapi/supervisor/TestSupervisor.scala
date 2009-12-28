@@ -8,6 +8,7 @@ import org.scalatest.{Suite, BeforeAndAfterAll}
 import se.scalablesolutions.akka.util.Logging
 import org.scalatest.matchers.ShouldMatchers
 import akkapi.recorder.ResultRecorder
+import akkapi.balancer.ActorManager
 
 /**
  * Test supervisor. Provide a running supervisor before suite.
@@ -15,17 +16,19 @@ import akkapi.recorder.ResultRecorder
  */
 
 trait TestSupervisor extends Suite with ShouldMatchers with BeforeAndAfterAll with Logging {
-  lazy val random = new RandomSupplier("randomSupplier")
-  lazy val resultRecorder = new ResultRecorder
-  lazy val piActor = new PiActor("piCalculator")
+  lazy val actorManager = new ActorManager
+  //  lazy val random = new RandomSupplier("randomSupplier")
+//  lazy val resultRecorder = new ResultRecorder
+  //  lazy val piActor = new PiActor("piCalculator")
   lazy val supervisor = factory.newInstance
 
   lazy val factory = SupervisorFactory(
     SupervisorConfig(
       RestartStrategy(OneForOne, 3, 10, List(classOf[Exception])),
-      Supervise(random, LifeCycle(Permanent)) ::
-              Supervise(piActor, LifeCycle(Permanent)) ::
-              Supervise(resultRecorder, LifeCycle(Permanent)) ::
+      Supervise(
+        actorManager, LifeCycle(Permanent)) ::
+              //              Supervise(piActor, LifeCycle(Permanent)) ::
+              //              Supervise(resultRecorder, LifeCycle(Permanent)) ::
               Nil)
     )
 
@@ -35,9 +38,10 @@ trait TestSupervisor extends Suite with ShouldMatchers with BeforeAndAfterAll wi
   override def beforeAll = {
     log.debug("Starting Supervisor")
     supervisor.start
+
     supervisor.isRunning should be(true)
-    piActor.isRunning should be(true)
-    random.isRunning should be(true)
+    //    piActor.isRunning should be(true)
+    //    random.isRunning should be(true)
   }
 
   /**

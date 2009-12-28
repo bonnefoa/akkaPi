@@ -2,7 +2,8 @@ package akkapi.recorder
 
 import se.scalablesolutions.akka.actor.{ActorRegistry, Actor}
 import se.scalablesolutions.akka.util.Logging
-import akkapi.pi.{EstimatePiWithNumberOfPointsAndBatchSize, PiActor}
+import akkapi.pi.{PiResponse, EstimatePiWithNumberOfPointsAndBatchSize, PiActor}
+import akkapi.balancer.Balancer
 
 /**
  * Configure actor manager
@@ -25,13 +26,6 @@ class ResultRecorder extends Actor with Logging {
    */
   var piStatistique = new PiStatistique(Nil)
 
-  def getFreePiActor: Option[Actor] = {
-    val listPiActor = ActorRegistry.actorsFor(classOf[PiActor]).asInstanceOf[List[PiActor]]
-    val filteredList = listPiActor.filter((actor: PiActor) => !actor.busy)
-    if (filteredList == Nil) None
-    else Some(filteredList.head.asInstanceOf[Actor])
-  }
-
 
   def receive: PartialFunction[Any, Unit] = {
     case RequestRecorderPiEstimateRequests(numberOfPoints) =>
@@ -49,7 +43,7 @@ class ResultRecorder extends Actor with Logging {
   }
 
   def sendRequestForPi(numberOfPoints: Int) {
-    val freeActors = getFreePiActor
+    val freeActors = Balancer.getFreePiActor
     if (freeActors.isDefined)
       freeActors.get ! (EstimatePiWithNumberOfPointsAndBatchSize(numberOfPoints, defaultBatchSize))
     else {

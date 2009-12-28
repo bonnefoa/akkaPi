@@ -17,10 +17,9 @@ case class AskRandomListBetweenAsync(size: Int, min: Double, max: Double) extend
 case class AskRandomListAsync(size: Int) extends RandomMessage
 
 
-class RandomSupplier(actorName: String) extends Actor {
+class RandomSupplier extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
   timeout = 100
-  id = actorName
 
   def receive: PartialFunction[Any, Unit] = {
     case AskRandomAsync() =>
