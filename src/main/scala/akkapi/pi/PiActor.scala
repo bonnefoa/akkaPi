@@ -62,8 +62,6 @@ class PiActor(id: String) extends Actor {
     case other =>
       log.error("Unknown event: %s", other)
   }
-
-
 }
 
 class PiCalculatorStateful(val expectedNumberOfPoints: Int)(val sender: Actor) extends Logging {

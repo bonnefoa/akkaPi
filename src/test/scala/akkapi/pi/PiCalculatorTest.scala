@@ -2,12 +2,14 @@ package akkapi.pi
 
 import org.scalatest.matchers.ShouldMatchers
 import org.scalatest.fixture.FixtureFlatSpec
-import akkapi.supervisor.{RandomSupervisor, DoSupervise}
 import akkapi.random.RandomSupplier
 import se.scalablesolutions.akka.util.Logging
-import se.scalablesolutions.akka.actor.{Actor}
 import akkapi.test.util.Time
 import akkapi.actor.test.{ActorTester}
+import se.scalablesolutions.akka.actor.{SupervisorFactory, Actor}
+import se.scalablesolutions.akka.config.ScalaConfig.{LifeCycle, Supervise, RestartStrategy, SupervisorConfig, Permanent, OneForOne}
+import org.scalatest.BeforeAndAfterAll
+
 
 /**
  * PiActor will supply pi estimation through differents message 
@@ -15,22 +17,27 @@ import akkapi.actor.test.{ActorTester}
  * @author Anthonin Bonnefoy
  */
 
-class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with ActorTester {
+class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with ActorTester with BeforeAndAfterAll {
+
   // Define type of expected result
   type TypeResult = Double
 
   // 1. define type FixtureParam
   type FixtureParam = Actor
 
+  val random = new RandomSupplier("randomSupplier")
+  val piActor = new PiActor("piCalculator")
+
+  val factory = SupervisorFactory(
+    SupervisorConfig(
+      RestartStrategy(OneForOne, 3, 10, List(classOf[Exception])),
+      Supervise(random, LifeCycle(Permanent)) :: Supervise(piActor, LifeCycle(Permanent)) :: Nil)
+    )
+
+  val supervisor = factory.newInstance
+
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
-    val supervisor = new RandomSupervisor()
-    log.debug("Starting Supervisor")
-    supervisor.start
-
-    val random = new RandomSupplier("randomSupplier")
-    val piActor = new PiActor("piCalculator")
-
     initTestActor {
       testActor => {
         case PiResponse(piEstimate) =>
@@ -38,17 +45,27 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
           testActor.result = Some(piEstimate)
       }
     }
-
-    supervisor.send(new DoSupervise(random))
-    supervisor.send(new DoSupervise(piActor))
-    // wait a bit to start all actors
-    Thread.sleep(200)
     Time(test.name) {
       test(piActor)
     }
-    supervisor.stop
     stopActor
   }
+
+
+  override def beforeAll = {
+    log.debug("Starting Supervisor")
+    supervisor.start
+    supervisor.isRunning should be(true)
+    piActor.isRunning should be(true)
+    random.isRunning should be(true)
+  }
+
+  override def afterAll = {
+    log.debug("Stoping Supervisor")
+    supervisor.stop
+
+  }
+
 
   "A PiActor" should "reply asynchronously" in {
     fixture =>
@@ -87,4 +104,6 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
           result.get should (be > (2.8D) and be < (3.5D))
       }
   }
+
+
 }
