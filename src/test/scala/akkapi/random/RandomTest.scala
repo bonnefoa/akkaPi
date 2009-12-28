@@ -2,36 +2,25 @@ package akkapi.random
 
 import org.scalatest.fixture.FixtureFlatSpec
 import org.scalatest.FlatSpec
-import akkapi.supervisor.{DoSupervise, RandomSupervisor}
 import se.scalablesolutions.akka.actor.Actor
 import se.scalablesolutions.akka.util.Logging
 import akkapi.actor.test.{TestActor, ActorTester}
+import akkapi.supervisor.{TestSupervisor}
 
-abstract class BaseRandomActorTest extends FixtureFlatSpec with CheckRandomReply with Logging with ActorTester {
+abstract class BaseRandomActorTest extends FixtureFlatSpec with CheckRandomReply with Logging with ActorTester with TestSupervisor {
   type OptionResult = Option[TypeResult]
 
   type FixtureParam = (Actor, TestActor[TypeResult])
 
   def withFixture(test: OneArgTest) {
-    val supervisor = new RandomSupervisor()
-    val random = new RandomSupplier("randomSupplier")
-    supervisor.start
-    log.debug("===> starting supervisor")
-    supervisor.send(new DoSupervise(random))
-
     initActorTester {
       testActor => {
         case result: OptionResult =>
           testActor.result = result
       }
     }
-    // wait a bit to start all actors
-    Thread.sleep(200)
-
     test((random, testActor))
-    log.debug("===> stoping supervisor")
     stopActorTester
-    supervisor.stop
   }
 }
 
