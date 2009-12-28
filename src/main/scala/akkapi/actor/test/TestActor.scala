@@ -5,7 +5,7 @@ import se.scalablesolutions.akka.util.Logging
 
 /**
  * Actor for testing purpose. It provides a testActor for receiving response from actors. You have to define the type of response
- * you expect through TypeResult and configure testActor through initTestActor.
+ * you expect through TypeResult and configure testActor through initActorTester.
  *
  * @author Anthonin Bonnefoy
  */
@@ -15,7 +15,7 @@ trait ActorTester extends Logging {
 
   var testActor: TestActor[TypeResult] = new TestActor
 
-  def initTestActor(block: TestActor[TypeResult] => PartialFunction[Any, Unit]) {
+  def initActorTester(block: TestActor[TypeResult] => PartialFunction[Any, Unit]) {
     testActor = new TestActor
     testActor.start
     testActor.receiveFunction = block(testActor)
@@ -37,7 +37,7 @@ trait ActorTester extends Logging {
     block(testActor.result, testActor.messageFailure)
   }
 
-  def stopActor() {
+  def stopActorTester() {
     testActor.stop
   }
 }

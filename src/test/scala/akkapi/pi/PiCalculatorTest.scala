@@ -27,6 +27,7 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
 
   val random = new RandomSupplier("randomSupplier")
   val piActor = new PiActor("piCalculator")
+  val supervisor = factory.newInstance
 
   val factory = SupervisorFactory(
     SupervisorConfig(
@@ -34,11 +35,9 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
       Supervise(random, LifeCycle(Permanent)) :: Supervise(piActor, LifeCycle(Permanent)) :: Nil)
     )
 
-  val supervisor = factory.newInstance
-
   // 2. define the withFixture method
   def withFixture(test: OneArgTest) {
-    initTestActor {
+    initActorTester {
       testActor => {
         case PiResponse(piEstimate) =>
           log.debug("Received " + piEstimate)
@@ -48,10 +47,12 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
     Time(test.name) {
       test(piActor)
     }
-    stopActor
+    stopActorTester
   }
 
-
+  /**
+   * Start supervisor
+   */
   override def beforeAll = {
     log.debug("Starting Supervisor")
     supervisor.start
@@ -60,19 +61,18 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
     random.isRunning should be(true)
   }
 
+  /**
+   * Stop supervisor
+   */
   override def afterAll = {
     log.debug("Stoping Supervisor")
     supervisor.stop
-
   }
-
 
   "A PiActor" should "reply asynchronously" in {
     fixture =>
       val (piActor) = fixture
-
       piActor.!(new EstimatePiWithNumberOfPoints(100))(testActor)
-
       response {
         (result, messageFailure) =>
           messageFailure should be(None)
@@ -104,6 +104,5 @@ class PiActorTest extends FixtureFlatSpec with ShouldMatchers with Logging with 
           result.get should (be > (2.8D) and be < (3.5D))
       }
   }
-
 
 }

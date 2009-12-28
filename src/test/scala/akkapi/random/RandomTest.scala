@@ -19,7 +19,7 @@ abstract class BaseRandomActorTest extends FixtureFlatSpec with CheckRandomReply
     log.debug("===> starting supervisor")
     supervisor.send(new DoSupervise(random))
 
-    initTestActor {
+    initActorTester {
       testActor => {
         case result: OptionResult =>
           testActor.result = result
@@ -30,7 +30,7 @@ abstract class BaseRandomActorTest extends FixtureFlatSpec with CheckRandomReply
 
     test((random, testActor))
     log.debug("===> stoping supervisor")
-    stopActor
+    stopActorTester
     supervisor.stop
   }
 }

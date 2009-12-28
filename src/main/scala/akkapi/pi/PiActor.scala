@@ -21,6 +21,8 @@ case class PiResponse(result: Double) extends PiActorMessage
 class PiActor(id: String) extends Actor {
   lifeCycle = Some(LifeCycle(Permanent))
   timeout = 10000
+
+  //  val mapPiActorStateful = new Map[String, PiCalculatorStateful]
   var piCalculatorStateful: PiCalculatorStateful = null
 
   def getRandomSupplier: RandomSupplier = {
@@ -32,6 +34,7 @@ class PiActor(id: String) extends Actor {
   def receive: PartialFunction[Any, Unit] = {
     case Some(point: Double) =>
       //      log.debug("Received a point :" + point)
+
       piCalculatorStateful.addPoint(point)
       if (piCalculatorStateful.isComplete) {
         piCalculatorStateful.sender ! PiResponse(piCalculatorStateful.processPi)
